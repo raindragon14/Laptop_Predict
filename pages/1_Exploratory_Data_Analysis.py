@@ -23,6 +23,7 @@ def load_data():
             df['Weight'] = df['Weight'].str.replace('kg', '').astype('float32')
 
         df['Harga_IDR'] = df['Price_euros'] * KURS_EUR_TO_IDR
+        df = df.drop('Price_euros', axis=1)
             
         return df
     except FileNotFoundError:
@@ -89,7 +90,6 @@ if df is not None:
     # 5. Korelasi antar fitur numerik
     st.subheader("5. Heatmap Korelasi Fitur Numerik")
     numeric_df = df.select_dtypes(include=['int32', 'float32', 'float64'])
-    numeric_df = numeric_df.drop('Price_euros', axis=1)
     corr = numeric_df.corr()
     fig_heatmap, ax = plt.subplots(figsize=(10, 7))
     sns.heatmap(corr, annot=True, cmap='coolwarm', ax=ax)
