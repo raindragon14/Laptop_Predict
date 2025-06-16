@@ -1,5 +1,3 @@
-# Salin semua kode di bawah ini ke dalam file pages/1_📊_Exploratory_Data_Analysis.py
-
 import streamlit as st
 import pandas as pd
 import plotly.express as px
