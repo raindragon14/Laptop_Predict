@@ -53,32 +53,7 @@ def get_data_options():
         return None
     try:
         df = pd.read_csv(DATA_PATH, encoding='latin-1')
-
-        # --- Logika Cerdas untuk Rekayasa Fitur ---
-        # Hanya lakukan rekayasa fitur jika kolom mentah ada & kolom turunan belum ada.
-        if 'Cpu' in df.columns and 'CPU_company' not in df.columns:
-            st.info("Melakukan rekayasa fitur CPU dari data mentah...")
-            df['CPU_company'] = df['Cpu'].apply(lambda x: str(x).split()[0])
-            df['CPU_freq'] = df['Cpu'].str.extract(r'(\d\.?\d*)GHz').astype(float)
-            df['CPU_freq'].fillna(df['CPU_freq'].median(), inplace=True)
-
-        if 'Gpu' in df.columns and 'GPU_company' not in df.columns:
-            st.info("Melakukan rekayasa fitur GPU dari data mentah...")
-            df['GPU_company'] = df['Gpu'].apply(lambda x: str(x).split()[0])
-
-        if 'Memory' in df.columns and 'PrimaryStorage' not in df.columns:
-            st.info("Melakukan rekayasa fitur Storage dari data mentah...")
-            storage_features = df['Memory'].apply(process_memory)
-            storage_features.columns = ['PrimaryStorage', 'PrimaryStorageType']
-            df = pd.concat([df, storage_features], axis=1)
-
-        if 'ScreenResolution' in df.columns and 'ScreenW' not in df.columns:
-            st.info("Melakukan rekayasa fitur Resolusi Layar dari data mentah...")
-            df.dropna(subset=['ScreenResolution'], inplace=True)
-            screen_res = df['ScreenResolution'].str.extract(r'(\d+)x(\d+)')
-            df['ScreenW'] = screen_res[0].astype(int)
-            df['ScreenH'] = screen_res[1].astype(int)
-
+        
         # Pembersihan standar
         if 'Ram' in df.columns and df['Ram'].dtype == 'object':
             df['Ram'] = df['Ram'].str.replace('GB', '', regex=False).astype('int32')
