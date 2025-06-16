@@ -26,10 +26,13 @@ if model is None:
 else:
     # Memuat data untuk mendapatkan opsi input
     @st.cache_data
-    def get_data_options():
-        df_options = pd.read_csv('laptop_prices.csv', encoding='latin-1')
+def get_data_options():
+    df_options = pd.read_csv('laptop_prices.csv', encoding='latin-1')
+
+    if df_options['Ram'].dtype == 'object':
         df_options['Ram'] = df_options['Ram'].str.replace('GB', '').astype('int32')
-        return df_options
+    
+    return df_options
 
     df_options = get_data_options()
 
