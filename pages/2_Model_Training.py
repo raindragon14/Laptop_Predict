@@ -10,9 +10,9 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import r2_score, mean_absolute_error
 import joblib
 
-st.set_page_config(page_title="Model Training (Final)", page_icon="🏆", layout="wide")
+st.set_page_config(page_title="Model Training", page_icon="🏆", layout="wide")
 
-st.title("🏆 Pelatihan Model Machine Learning (Versi Final)")
+st.title("🏆 Pelatihan Model Machine Learning")
 st.markdown("Model ini disesuaikan untuk bekerja dengan dataset yang sudah diproses dan menggunakan fitur-fitur yang lebih lengkap seperti detail layar dan komponen.")
 
 KURS_KE_JUTA_IDR = 17500 / 1000000
