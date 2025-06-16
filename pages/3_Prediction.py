@@ -51,7 +51,7 @@ def get_data_options():
             weight = st.number_input("Berat (kg)", min_value=0.5, max_value=5.0, value=1.5, step=0.1)
 
         with col3:
-            opsys = st.selectbox("Sistem Operasi", options=df_options['OpSys'].unique())
+            opsys = st.selectbox("Sistem Operasi", options=df_options['OS'].unique())
             inches = st.number_input("Ukuran Layar (Inci)", min_value=10.0, max_value=20.0, value=15.6, step=0.1)
 
         submit_button = st.form_submit_button(label="Prediksi Harga", type="primary")
@@ -63,7 +63,7 @@ def get_data_options():
             'TypeName': [type_name],
             'Ram': [ram],
             'Weight': [weight],
-            'OpSys': [opsys],
+            'OS': [os],
             'Inches': [inches]
         })
 
