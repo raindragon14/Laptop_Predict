@@ -22,10 +22,6 @@ def load_data():
             df['Ram'] = df['Ram'].str.replace('GB', '').astype('int32')
         if 'Weight' in df.columns and df['Weight'].dtype == 'object':
             df['Weight'] = df['Weight'].str.replace('kg', '').astype('float32')
-            
-        # Feature Engineering: Membuat kolom 'Inches' dari 'ScreenResolution'
-        if 'ScreenResolution' in df.columns:
-            df['Inches'] = df['ScreenResolution'].str.extract(r'(\d+\.?\d+)').astype(float)
         
         # Menghapus baris dengan nilai NaN yang mungkin muncul setelah ekstraksi
         df.dropna(subset=['Inches', 'Weight', 'Ram'], inplace=True)
