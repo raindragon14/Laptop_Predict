@@ -89,7 +89,6 @@ if df is not None:
     # 5. Korelasi antar fitur numerik
     st.subheader("5. Heatmap Korelasi Fitur Numerik")
     numeric_df = df.select_dtypes(include=['int32', 'float32', 'float64'])
-    if 'Price_euros' in numeric_df.columns:
     numeric_df = numeric_df.drop('Price_euros', axis=1)
     corr = numeric_df.corr()
     fig_heatmap, ax = plt.subplots(figsize=(10, 7))
