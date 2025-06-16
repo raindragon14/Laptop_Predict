@@ -9,8 +9,6 @@ st.set_page_config(page_title="Prediction", page_icon="🔮", layout="wide")
 st.title("🔮 Prediksi Harga Laptop")
 st.markdown("Masukkan spesifikasi laptop untuk mendapatkan estimasi harga.")
 
-KURS_EUR_TO_IDR = 0.0175
-
 # --- Definisi Fungsi di Awal Skrip ---
 
 # Path ke model yang sudah disimpan
