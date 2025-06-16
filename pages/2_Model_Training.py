@@ -13,6 +13,8 @@ st.set_page_config(page_title="Model Training", page_icon="🤖", layout="wide")
 st.title("🤖 Pelatihan Model Machine Learning")
 st.markdown("Di halaman ini, kita akan melatih model untuk memprediksi harga laptop.")
 
+KURS_EUR_TO_IDR = 0.0175
+
 @st.cache_data
 def load_data():
     try:
@@ -22,8 +24,8 @@ def load_data():
             df['Ram'] = df['Ram'].str.replace('GB', '').astype('int32')
         if 'Weight' in df.columns and df['Weight'].dtype == 'object':
             df['Weight'] = df['Weight'].str.replace('kg', '').astype('float32')
+        df['Harga_IDR'] = (df['Price_euros'] * KURS_EUR_TO_IDR).astype(np.int64)
         
-        # Menghapus baris dengan nilai NaN yang mungkin muncul setelah ekstraksi
         df.dropna(subset=['Inches', 'Weight', 'Ram'], inplace=True)
         return df
     except (FileNotFoundError, AttributeError, KeyError) as e:
