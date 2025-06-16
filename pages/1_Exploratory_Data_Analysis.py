@@ -18,13 +18,6 @@ def load_data():
             df['Ram'] = df['Ram'].str.replace('GB', '').astype('int32')
         if df['Weight'].dtype == 'object':
             df['Weight'] = df['Weight'].str.replace('kg', '').astype('float32')
-        
-        # PERBAIKAN: Membuat kolom 'Inches' dari 'ScreenResolution'
-        if 'ScreenResolution' in df.columns:
-            df['Inches'] = df['Screen'].str.extract(r'(\d+\.\d+)').astype(float)
-        else:
-            # Fallback jika kolom ScreenResolution tidak ada
-            st.warning("Kolom 'ScreenResolution' tidak ditemukan untuk membuat fitur 'Inches'.")
             
         return df
     except (FileNotFoundError, AttributeError) as e:
