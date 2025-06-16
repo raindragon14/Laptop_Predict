@@ -150,8 +150,7 @@ if model and df_options is not None:
             try:
                 log_prediction = model.predict(input_data)
                 predicted_price = np.expm1(log_prediction[0])
-
-                st.balloons()
+                
                 st.success(f"## **Estimasi Harga: Rp {predicted_price:,.2f} Juta**")
             except Exception as e:
                 st.error(f"Terjadi error saat melakukan prediksi: {e}")
