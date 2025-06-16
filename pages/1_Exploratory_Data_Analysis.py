@@ -29,10 +29,10 @@ def load_data():
         st.error("Dataset tidak ditemukan. Pastikan 'laptop_prices.csv' ada.")
         return None
 
-df = load_data()
-
 if 'Price_euros' in df.columns:
 df = df.drop('Price_euros', axis=1)
+
+df = load_data()
 
 if df is not None:
     st.header("Informasi Dasar Dataset")
