@@ -23,6 +23,8 @@ def load_data():
             df['Weight'] = df['Weight'].str.replace('kg', '').astype('float32')
 
         df['Harga_IDR'] = df['Price_euros'] * KURS_EUR_TO_IDR
+        if 'Price_euros' in df.columns:
+        df = df.drop('Price_euros', axis=1)
             
         return df
     except FileNotFoundError:
