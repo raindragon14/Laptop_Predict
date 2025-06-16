@@ -15,52 +15,39 @@ st.set_page_config(page_title="Model Training (Final)", page_icon="🏆", layout
 st.title("🏆 Pelatihan Model Machine Learning (Versi Final)")
 st.markdown("Model ini disesuaikan untuk bekerja dengan dataset yang sudah diproses dan menggunakan fitur-fitur yang lebih lengkap seperti detail layar dan komponen.")
 
-# Konstanta untuk konversi ke Juta Rupiah
-KURS_KE_JUTA_IDR = 17500 / 1000000 # Kurs Euro ke Rupiah, lalu ke Juta
+KURS_KE_JUTA_IDR = 17500 / 1000000
 
 @st.cache_data
 def load_data(file_path='laptop_prices.csv'):
     """Memuat data yang sudah bersih dan diproses."""
     try:
         df = pd.read_csv(file_path, encoding='latin-1')
-        
-        # Mengganti nama kolom agar konsisten (menghilangkan spasi)
-        # Ini penting agar bisa diakses sebagai atribut.
         df.rename(columns={
             'Price': 'Price_euros',
             'ScreenResolution': 'Screen',
             'Cpu': 'CPU_model',
             'Gpu': 'GPU_model',
             'Memory': 'Storage'
-        }, inplace=True, errors='ignore') # errors='ignore' jika kolom tidak ada
+        }, inplace=True, errors='ignore')
         
-        # --- Asumsi kolom-kolom hasil rekayasa fitur sudah ada ---
-        # Jika tidak, bagian ini bisa diaktifkan kembali
-        # Contoh: Jika masih perlu ekstraksi GPU brand
         if 'Gpu' in df.columns and 'GPU_company' not in df.columns:
             st.info("Melakukan rekayasa fitur untuk GPU...")
             df['GPU_company'] = df['Gpu'].apply(lambda x: str(x).split()[0])
 
-        # --- Konversi Yes/No ke 1/0 agar bisa diproses ---
-        # Menggunakan LabelEncoder untuk kolom biner
         for col in ['Touchscreen', 'IPSpanel']:
             if col in df.columns and df[col].dtype == 'object':
                 le = LabelEncoder()
                 df[col] = le.fit_transform(df[col])
-        
-        # --- Pembersihan Kolom Numerik Lainnya ---
+ 
         if 'Ram' in df.columns and df['Ram'].dtype == 'object':
             df['Ram'] = df['Ram'].str.replace('GB', '', regex=False).astype('int32')
         if 'Weight' in df.columns and df['Weight'].dtype == 'object':
             df['Weight'] = df['Weight'].str.replace('kg', '', regex=False).astype('float32')
 
-        # --- Konversi Harga & Finalisasi ---
         if 'Price_euros' in df.columns:
             df['Harga_IDR'] = df['Price_euros'] * KURS_KE_JUTA_IDR
             df = df.drop('Price_euros', axis=1)
         
-        # Menghapus baris dengan data yang hilang pada fitur utama
-        # Pastikan kolom-kolom ini ada di file Anda
         required_cols = ['Inches', 'Ram', 'Weight', 'Harga_IDR', 'CPU_freq', 'PrimaryStorage', 'ScreenW', 'ScreenH']
         df.dropna(subset=[col for col in required_cols if col in df.columns], inplace=True)
         
@@ -74,20 +61,17 @@ def load_data(file_path='laptop_prices.csv'):
         st.error(f"Terjadi kesalahan saat memuat atau memproses data: {e}")
         return None
 
-# Di sini, Anda mungkin perlu mengubah nama file jika berbeda
 df = load_data('laptop_prices.csv')
 
 if df is not None:
     st.header("Persiapan Data untuk Pelatihan")
 
-    # Fitur yang digunakan sekarang disesuaikan dengan dataset baru yang lebih kaya
     features = [
         'Company', 'TypeName', 'Ram', 'Weight', 'OS', 'Inches', 
         'CPU_company', 'CPU_freq', 'GPU_company', 'PrimaryStorage', 'PrimaryStorageType',
         'ScreenW', 'ScreenH', 'Touchscreen', 'IPSpanel'
     ]
     
-    # Filter fitur yang benar-benar ada di DataFrame untuk menghindari error
     available_features = [f for f in features if f in df.columns]
     target = 'Harga_IDR'
 
@@ -105,7 +89,6 @@ if df is not None:
         
         st.markdown(f"Data telah dibagi menjadi:  \n- **Data Latih**: {X_train.shape[0]} baris  \n- **Data Uji**: {X_test.shape[0]} baris")
 
-        # --- Pipeline Pra-pemrosesan Data (Diperbarui) ---
         numeric_features = [f for f in ['Ram', 'Weight', 'Inches', 'CPU_freq', 'PrimaryStorage', 'ScreenW', 'ScreenH', 'Touchscreen', 'IPSpanel'] if f in X.columns]
         categorical_features = [f for f in ['Company', 'TypeName', 'OS', 'CPU_company', 'GPU_company', 'PrimaryStorageType'] if f in X.columns]
 
@@ -115,7 +98,6 @@ if df is not None:
                 ('cat', OneHotEncoder(handle_unknown='ignore', drop='first'), categorical_features)
             ], remainder='passthrough')
 
-        # --- Pipeline Model ---
         model = Pipeline(steps=[
             ('preprocessor', preprocessor),
             ('regressor', RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=-1, oob_score=True))
@@ -123,7 +105,7 @@ if df is not None:
 
         st.header("Mulai Pelatihan Model")
         if st.button("Latih Model dengan Dataset Final", type="primary"):
-            with st.spinner("Model sedang dilatih dengan data yang lebih lengkap, mohon tunggu..."):
+            with st.spinner("Model sedang dilatih, mohon tunggu..."):
                 
                 y_train_log = np.log1p(y_train)
                 model.fit(X_train, y_train_log)
@@ -138,7 +120,7 @@ if df is not None:
                 oob = model.named_steps['regressor'].oob_score_
 
             st.success("🎉 Model final berhasil dilatih dan disimpan!")
-            st.info("Model ini dilatih menggunakan fitur-fitur yang lebih spesifik untuk prediksi yang lebih kuat.")
+            st.info("Model ini dilatih menggunakan fitur-fitur yang lebih spesifik.")
             
             col1, col2, col3 = st.columns(3)
             with col1:
