@@ -16,9 +16,14 @@ st.markdown("Mari kita jelajahi karakteristik dari dataset harga laptop.")
 def load_data():
     try:
         df = pd.read_csv('laptop_prices.csv', encoding='latin-1')
-        # Preprocessing sederhana
-        df['Ram'] = df['Ram'].str.replace('GB', '').astype('int32')
-        df['Weight'] = df['Weight'].str.replace('kg', '').astype('float32')
+        
+        # PERBAIKAN: Hanya proses jika kolomnya adalah string (object)
+        if df['Ram'].dtype == 'object':
+            df['Ram'] = df['Ram'].str.replace('GB', '').astype('int32')
+        
+        if df['Weight'].dtype == 'object':
+            df['Weight'] = df['Weight'].str.replace('kg', '').astype('float32')
+            
         return df
     except FileNotFoundError:
         st.error("Dataset tidak ditemukan. Pastikan 'laptop_prices.csv' ada.")
