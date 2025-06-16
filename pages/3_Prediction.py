@@ -5,17 +5,14 @@ import os
 import numpy as np
 import re
 
-# --- Konfigurasi Halaman ---
 st.set_page_config(page_title="Prediksi Harga Laptop", page_icon="💻", layout="wide")
 
 st.title("💻 Prediksi Harga Laptop")
 st.markdown("Isi detail spesifikasi di bawah ini untuk mendapatkan estimasi harga laptop impian Anda.")
 
-# --- Definisi Fungsi dan Konstanta ---
 MODEL_PATH = 'final_model_pipeline.joblib'
 DATA_PATH = 'laptop_prices.csv'
 
-# Fungsi untuk memproses storage (sama seperti di skrip training)
 def process_memory(memory_str):
     memory_str = str(memory_str).strip().lower()
     if '+' in memory_str:
@@ -32,7 +29,6 @@ def process_memory(memory_str):
         size_gb = size * 1000 if 'tb' in memory_str else size
     return pd.Series([size_gb, storage_type])
 
-# Fungsi untuk memuat model
 @st.cache_resource
 def load_model():
     if not os.path.exists(MODEL_PATH):
@@ -45,7 +41,6 @@ def load_model():
         st.error(f"Gagal memuat model: {e}")
         return None
 
-# Fungsi untuk memuat dan memproses data untuk opsi input (DIPERBARUI)
 @st.cache_data
 def get_data_options():
     if not os.path.exists(DATA_PATH):
@@ -53,8 +48,7 @@ def get_data_options():
         return None
     try:
         df = pd.read_csv(DATA_PATH, encoding='latin-1')
-        
-        # Pembersihan standar
+    
         if 'Ram' in df.columns and df['Ram'].dtype == 'object':
             df['Ram'] = df['Ram'].str.replace('GB', '', regex=False).astype('int32')
 
@@ -63,7 +57,6 @@ def get_data_options():
         st.error(f"Gagal memproses data untuk opsi input: {e}")
         return None
 
-# --- Logika Utama Aplikasi ---
 model = load_model()
 df_options = get_data_options()
 
@@ -90,14 +83,12 @@ if model and df_options is not None:
             storage_type = st.selectbox("Tipe Penyimpanan Utama", options=sorted(df_options['PrimaryStorageType'].unique()))
             primary_storage = st.select_slider("Kapasitas Penyimpanan (GB)", options=sorted(df_options[df_options['PrimaryStorage'] > 0]['PrimaryStorage'].unique()), value=256)
         with col5:
-            # Memastikan kolom 'ScreenResolution' ada sebelum digunakan
             if 'ScreenResolution' in df_options.columns:
                  screen_resolution = st.selectbox("Resolusi Layar", options=sorted(df_options['ScreenResolution'].unique()))
                  res_match = re.search(r'(\d+)x(\d+)', screen_resolution)
                  screen_w = int(res_match.group(1)) if res_match else 1920
                  screen_h = int(res_match.group(2)) if res_match else 1080
             else:
-                # Jika tidak ada, gunakan input manual
                 screen_w = st.number_input("Lebar Layar (px)", value=1920)
                 screen_h = st.number_input("Tinggi Layar (px)", value=1080)
         with col6:
