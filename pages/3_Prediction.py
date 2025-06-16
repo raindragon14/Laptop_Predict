@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import joblib
 import os
+import numpy as np # Diperlukan untuk transformasi balik (eksponensial)
 
 # Konfigurasi halaman Streamlit
 st.set_page_config(page_title="Prediction", page_icon="🔮", layout="wide")
@@ -27,7 +28,7 @@ def load_model():
             return None
     return None
 
-# Fungsi untuk memuat dan membersihkan data (menggunakan cache data agar data hanya dibaca sekali)
+# Fungsi untuk memuat data untuk opsi input
 @st.cache_data
 def get_data_options():
     """Membaca file CSV dan menyiapkan data untuk opsi input."""
@@ -93,11 +94,16 @@ else:
         # Melakukan prediksi dengan menampilkan spinner
         with st.spinner("Menghitung estimasi harga..."):
             try:
-                prediction = model.predict(input_data)
-                # Mengambil nilai pertama dari hasil prediksi
-                predicted_price = prediction[0]
+                # --- PENYESUAIAN UNTUK MODEL LOGARITMIK ---
+                # 1. Model akan memprediksi harga dalam skala log
+                log_prediction = model.predict(input_data)
+                
+                # 2. Kembalikan hasil prediksi ke skala asli (Juta Rupiah) menggunakan eksponensial
+                predicted_price = np.expm1(log_prediction[0])
 
                 st.subheader("🎉 Hasil Prediksi Harga")
-                st.success(f"**Estimasi Harga Laptop: {predicted_price:,.2f} Juta**")
+                # 3. Tampilkan hasil yang sudah dalam skala yang benar
+                st.success(f"**Estimasi Harga Laptop: Rp {predicted_price:,.2f} Juta**")
+                
             except Exception as e:
                 st.error(f"Terjadi error saat prediksi: {e}")
