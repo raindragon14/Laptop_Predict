@@ -52,12 +52,20 @@ if df is not None:
     col1, col2 = st.columns(2)
 
     with col1:
-        # 2. Jumlah Laptop per Perusahaan
-        st.subheader("2. Jumlah Laptop per Brand")
-        fig_company = px.bar(df['Company'].value_counts().reset_index(), x='index', y='Company',
-                             labels={'index': 'Brand', 'Company': 'Jumlah'}, title='Jumlah Laptop Berdasarkan Brand')
-        st.plotly_chart(fig_company, use_container_width=True)
-        st.markdown("**Insight**: Dell, Lenovo, dan HP mendominasi pasar.")
+    # 2. Jumlah Laptop per Perusahaan
+    st.subheader("2. Jumlah Laptop per Brand")
+
+    company_counts = df['Company'].value_counts().reset_index()
+    company_counts.columns = ['Brand', 'Jumlah']  # Ganti nama kolom menjadi 'Brand' dan 'Jumlah'
+
+    fig_company = px.bar(company_counts,
+                         x='Brand',
+                         y='Jumlah',
+                         title='Jumlah Laptop Berdasarkan Brand',
+                         labels={'Brand': 'Brand Laptop', 'Jumlah': 'Jumlah Unit'}) # Sesuaikan label jika perlu
+
+    st.plotly_chart(fig_company, use_container_width=True)
+    st.markdown("**Insight**: Dell, Lenovo, dan HP mendominasi pasar.")
 
     with col2:
         # 3. Tipe Laptop
