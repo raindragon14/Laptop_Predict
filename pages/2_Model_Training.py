@@ -25,6 +25,7 @@ def load_data():
         if 'Weight' in df.columns and df['Weight'].dtype == 'object':
             df['Weight'] = df['Weight'].str.replace('kg', '').astype('float32')
         df['Harga_IDR'] = df['Price_euros'] * KURS_EUR_TO_IDR
+        df = df.drop('Price_euros', axis=1)
         
         df.dropna(subset=['Inches', 'Weight', 'Ram'], inplace=True)
         return df
