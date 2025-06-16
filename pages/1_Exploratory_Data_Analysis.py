@@ -22,7 +22,7 @@ def load_data():
         if df['Weight'].dtype == 'object':
             df['Weight'] = df['Weight'].str.replace('kg', '').astype('float32')
 
-        df['Harga_IDR'] = (df['Price_euros'] * KURS_EUR_TO_IDR).astype(np.int64)
+        df['Harga_IDR'] = df['Price_euros'] * KURS_EUR_TO_IDR
             
         return df
     except FileNotFoundError:
