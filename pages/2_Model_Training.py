@@ -35,7 +35,7 @@ df = load_data()
 if df is not None and 'Inches' in df.columns:
     st.header("Persiapan Data untuk Pelatihan")
 
-    features = ['Company', 'TypeName', 'Ram', 'Weight', 'OpSys', 'Inches']
+    features = ['Company', 'TypeName', 'Ram', 'Weight', 'OS', 'Inches']
     target = 'Price_euros'
     
     X = df[features]
