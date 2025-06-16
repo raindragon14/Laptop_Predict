@@ -45,7 +45,7 @@ def load_model():
         st.error(f"Gagal memuat model: {e}")
         return None
 
-# Fungsi untuk memuat dan memproses data untuk opsi input
+# Fungsi untuk memuat dan memproses data untuk opsi input (DIPERBARUI)
 @st.cache_data
 def get_data_options():
     if not os.path.exists(DATA_PATH):
@@ -53,19 +53,36 @@ def get_data_options():
         return None
     try:
         df = pd.read_csv(DATA_PATH, encoding='latin-1')
-        # Lakukan feature engineering yang sama persis seperti di training
-        df['CPU_company'] = df['Cpu'].apply(lambda x: str(x).split()[0])
-        df['CPU_freq'] = df['Cpu'].str.extract(r'(\d\.?\d*)GHz').astype(float).fillna(df['Cpu'].str.extract(r'(\d\.?\d*)GHz').astype(float).median())
-        df['GPU_company'] = df['Gpu'].apply(lambda x: str(x).split()[0])
-        storage_features = df['Memory'].apply(process_memory)
-        storage_features.columns = ['PrimaryStorage', 'PrimaryStorageType']
-        df = pd.concat([df, storage_features], axis=1)
-        df.dropna(subset=['ScreenResolution'], inplace=True)
-        screen_res = df['ScreenResolution'].str.extract(r'(\d+)x(\d+)')
-        df['ScreenW'] = screen_res[0].astype(int)
-        df['ScreenH'] = screen_res[1].astype(int)
-        if df['Ram'].dtype == 'object':
+
+        # --- Logika Cerdas untuk Rekayasa Fitur ---
+        # Hanya lakukan rekayasa fitur jika kolom mentah ada & kolom turunan belum ada.
+        if 'Cpu' in df.columns and 'CPU_company' not in df.columns:
+            st.info("Melakukan rekayasa fitur CPU dari data mentah...")
+            df['CPU_company'] = df['Cpu'].apply(lambda x: str(x).split()[0])
+            df['CPU_freq'] = df['Cpu'].str.extract(r'(\d\.?\d*)GHz').astype(float)
+            df['CPU_freq'].fillna(df['CPU_freq'].median(), inplace=True)
+
+        if 'Gpu' in df.columns and 'GPU_company' not in df.columns:
+            st.info("Melakukan rekayasa fitur GPU dari data mentah...")
+            df['GPU_company'] = df['Gpu'].apply(lambda x: str(x).split()[0])
+
+        if 'Memory' in df.columns and 'PrimaryStorage' not in df.columns:
+            st.info("Melakukan rekayasa fitur Storage dari data mentah...")
+            storage_features = df['Memory'].apply(process_memory)
+            storage_features.columns = ['PrimaryStorage', 'PrimaryStorageType']
+            df = pd.concat([df, storage_features], axis=1)
+
+        if 'ScreenResolution' in df.columns and 'ScreenW' not in df.columns:
+            st.info("Melakukan rekayasa fitur Resolusi Layar dari data mentah...")
+            df.dropna(subset=['ScreenResolution'], inplace=True)
+            screen_res = df['ScreenResolution'].str.extract(r'(\d+)x(\d+)')
+            df['ScreenW'] = screen_res[0].astype(int)
+            df['ScreenH'] = screen_res[1].astype(int)
+
+        # Pembersihan standar
+        if 'Ram' in df.columns and df['Ram'].dtype == 'object':
             df['Ram'] = df['Ram'].str.replace('GB', '', regex=False).astype('int32')
+
         return df
     except Exception as e:
         st.error(f"Gagal memproses data untuk opsi input: {e}")
@@ -90,7 +107,7 @@ if model and df_options is not None:
         with col3:
             cpu_company = st.selectbox("Brand CPU", options=sorted(df_options['CPU_company'].unique()))
             gpu_company = st.selectbox("Brand GPU", options=sorted(df_options['GPU_company'].unique()))
-            cpu_freq = st.slider("Frekuensi CPU (GHz)", min_value=0.9, max_value=3.6, value=2.5, step=0.1)
+            cpu_freq = st.slider("Frekuensi CPU (GHz)", min_value=0.9, max_value=4.0, value=2.5, step=0.1)
 
         st.header("Penyimpanan & Layar")
         col4, col5, col6 = st.columns(3)
@@ -98,22 +115,25 @@ if model and df_options is not None:
             storage_type = st.selectbox("Tipe Penyimpanan Utama", options=sorted(df_options['PrimaryStorageType'].unique()))
             primary_storage = st.select_slider("Kapasitas Penyimpanan (GB)", options=sorted(df_options[df_options['PrimaryStorage'] > 0]['PrimaryStorage'].unique()), value=256)
         with col5:
-            screen_resolution = st.selectbox("Resolusi Layar", options=sorted(df_options['ScreenResolution'].unique()))
-            # Ekstrak ScreenW dan ScreenH dari pilihan
-            res_match = re.search(r'(\d+)x(\d+)', screen_resolution)
-            screen_w = int(res_match.group(1)) if res_match else 1920
-            screen_h = int(res_match.group(2)) if res_match else 1080
+            # Memastikan kolom 'ScreenResolution' ada sebelum digunakan
+            if 'ScreenResolution' in df_options.columns:
+                 screen_resolution = st.selectbox("Resolusi Layar", options=sorted(df_options['ScreenResolution'].unique()))
+                 res_match = re.search(r'(\d+)x(\d+)', screen_resolution)
+                 screen_w = int(res_match.group(1)) if res_match else 1920
+                 screen_h = int(res_match.group(2)) if res_match else 1080
+            else:
+                # Jika tidak ada, gunakan input manual
+                screen_w = st.number_input("Lebar Layar (px)", value=1920)
+                screen_h = st.number_input("Tinggi Layar (px)", value=1080)
         with col6:
             touchscreen_str = st.radio("Layar Sentuh (Touchscreen)", options=['No', 'Yes'], horizontal=True)
             ips_str = st.radio("Panel IPS", options=['No', 'Yes'], horizontal=True)
-            # Konversi input string ke numerik (0 atau 1)
             touchscreen = 1 if touchscreen_str == 'Yes' else 0
             ips = 1 if ips_str == 'Yes' else 0
 
         submit_button = st.form_submit_button(label="Prediksi Harga", type="primary", use_container_width=True)
 
     if submit_button:
-        # Kumpulkan semua data ke dalam DataFrame dengan urutan kolom yang benar
         input_data = pd.DataFrame({
             'Company': [company], 'TypeName': [type_name], 'Ram': [ram],
             'Weight': [weight], 'OS': [opsys], 'Inches': [inches],
@@ -128,9 +148,7 @@ if model and df_options is not None:
 
         with st.spinner("Model sedang menganalisis spesifikasi..."):
             try:
-                # Prediksi harga dalam skala logaritmik
                 log_prediction = model.predict(input_data)
-                # Transformasi balik ke skala harga asli (Juta Rupiah)
                 predicted_price = np.expm1(log_prediction[0])
 
                 st.balloons()
