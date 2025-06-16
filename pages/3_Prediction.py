@@ -9,6 +9,8 @@ st.set_page_config(page_title="Prediction", page_icon="🔮", layout="wide")
 st.title("🔮 Prediksi Harga Laptop")
 st.markdown("Masukkan spesifikasi laptop untuk mendapatkan estimasi harga.")
 
+KURS_EUR_TO_IDR = 0.0175
+
 # --- Definisi Fungsi di Awal Skrip ---
 
 # Path ke model yang sudah disimpan
@@ -33,7 +35,6 @@ def get_data_options():
     """Membaca file CSV dan menyiapkan data untuk opsi input."""
     try:
         df_options = pd.read_csv('laptop_prices.csv', encoding='latin-1')
-        # Membersihkan kolom 'Ram' dengan menghapus 'GB' dan mengubah tipe data
         if df_options['Ram'].dtype == 'object':
             df_options['Ram'] = df_options['Ram'].str.replace('GB', '', regex=False).astype('int32')
         return df_options
@@ -84,7 +85,6 @@ else:
             'TypeName': [type_name],
             'Ram': [ram],
             'Weight': [weight],
-            # PERBAIKAN: Menggunakan variabel 'opsys' bukan 'os' untuk menghindari konflik
             'OS': [opsys],
             'Inches': [inches]
         })
