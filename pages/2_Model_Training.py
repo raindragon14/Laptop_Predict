@@ -67,8 +67,8 @@ if df is not None:
     st.header("Persiapan Data untuk Pelatihan")
 
     features = [
-        'Company', 'TypeName', 'Ram', 'Weight', 'OS', 'Inches', 
-        'CPU_company', 'CPU_freq', 'GPU_company', 'PrimaryStorage', 'PrimaryStorageType',
+        'Company', 'TypeName', 'Ram', 'OS', 
+        'CPU_company', 'CPU_freq', 'GPU_company', 'PrimaryStorageType',
         'ScreenW', 'ScreenH', 'Touchscreen', 'IPSpanel'
     ]
     
@@ -89,7 +89,7 @@ if df is not None:
         
         st.markdown(f"Data telah dibagi menjadi:  \n- **Data Latih**: {X_train.shape[0]} baris  \n- **Data Uji**: {X_test.shape[0]} baris")
 
-        numeric_features = [f for f in ['Ram', 'Weight', 'Inches', 'CPU_freq', 'PrimaryStorage', 'ScreenW', 'ScreenH', 'Touchscreen', 'IPSpanel'] if f in X.columns]
+        numeric_features = [f for f in ['Ram', 'CPU_freq', 'ScreenW', 'ScreenH', 'Touchscreen', 'IPSpanel'] if f in X.columns]
         categorical_features = [f for f in ['Company', 'TypeName', 'OS', 'CPU_company', 'GPU_company', 'PrimaryStorageType'] if f in X.columns]
 
         preprocessor = ColumnTransformer(
