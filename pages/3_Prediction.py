@@ -13,7 +13,7 @@ st.markdown("Masukkan spesifikasi laptop untuk mendapatkan estimasi harga.")
 # --- Definisi Fungsi di Awal Skrip ---
 
 # Path ke model yang sudah disimpan
-MODEL_PATH = 'model_pipeline.joblib'
+MODEL_PATH = 'final_model_pipeline.joblib'
 
 # Fungsi untuk memuat model (menggunakan cache resource agar model hanya dimuat sekali)
 @st.cache_resource
@@ -51,7 +51,7 @@ df_options = get_data_options()
 
 # Tampilkan error jika model atau data tidak berhasil dimuat
 if model is None:
-    st.error("Model 'model_pipeline.joblib' tidak ditemukan! Silakan pergi ke halaman 'Model Training' untuk melatih model terlebih dahulu.")
+    st.error("Model 'final_model_pipeline.joblib' tidak ditemukan! Silakan pergi ke halaman 'Model Training' untuk melatih model terlebih dahulu.")
 elif df_options is None:
     st.warning("Data untuk opsi input tidak dapat dimuat. Fungsionalitas prediksi tidak akan berjalan.")
 else:
@@ -79,13 +79,22 @@ else:
     # Blok ini akan dieksekusi hanya jika tombol submit di dalam form ditekan
     if submit_button:
         # Membuat DataFrame dari input pengguna untuk diproses oleh model
-        input_data = pd.DataFrame({
-            'Company': [company],
-            'TypeName': [type_name],
-            'Ram': [ram],
-            'Weight': [weight],
-            'OS': [opsys],
-            'Inches': [inches]
+    input_data = pd.DataFrame({
+    'Company': [company],
+    'TypeName': [type_name],
+    'Ram': [ram],
+    'Weight': [weight],
+    'OS': [opsys],
+    'Inches': [inches],
+    'CPU_company': [cpu_company],
+    'CPU_freq': [cpu_freq],
+    'GPU_company': [gpu_company],
+    'PrimaryStorage': [primary_storage],
+    'PrimaryStorageType': [storage_type],
+    'ScreenW': [screen_w],
+    'ScreenH': [screen_h],
+    'Touchscreen': [touchscreen],  
+    'IPSpanel': [ips]
         })
 
         st.subheader("Data Input Anda:")
