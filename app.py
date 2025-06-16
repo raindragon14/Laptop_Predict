@@ -1,16 +1,12 @@
-# app.py
-
 import streamlit as st
 import pandas as pd
 
-# Konfigurasi halaman
 st.set_page_config(
     page_title="Laptop Price Predictor",
     page_icon="💻",
     layout="wide"
 )
 
-# Judul dan deskripsi
 st.title("💻 Dashboard Prediksi Harga Laptop")
 st.markdown("""
 Aplikasi ini dirancang untuk menganalisis data laptop dan memprediksi harganya 
@@ -24,7 +20,6 @@ berdasarkan fitur-fitur yang ada.
 
 KURS = 0.0175
 
-# Menampilkan data mentah
 st.header("Cuplikan Dataset Harga Laptop")
 try:
     df = pd.read_csv('laptop_prices.csv', encoding='latin-1')
