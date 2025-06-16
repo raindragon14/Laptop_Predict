@@ -36,7 +36,7 @@ if df is not None and 'Inches' in df.columns:
     st.header("Persiapan Data untuk Pelatihan")
 
     features = ['Company', 'TypeName', 'Ram', 'Weight', 'OS', 'Inches']
-    target = 'Price_euros'
+    target = 'Harga_IDR'
     
     X = df[features]
     y = df[target]
