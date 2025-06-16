@@ -22,10 +22,14 @@ berdasarkan fitur-fitur yang ada.
 - **Prediction**: Untuk memprediksi harga laptop baru.
 """)
 
+KURS = 0.0175
+
 # Menampilkan data mentah
 st.header("Cuplikan Dataset Harga Laptop")
 try:
     df = pd.read_csv('laptop_prices.csv', encoding='latin-1')
+    df['Harga_IDR'] = df['Price_euros'] * KURS
+    df = df.drop('Price_euros', axis=1)
     st.dataframe(df.head())
     st.info(f"Dataset ini memiliki **{df.shape[0]} baris** dan **{df.shape[1]} kolom**.")
 except FileNotFoundError:
