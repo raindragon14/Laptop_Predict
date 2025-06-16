@@ -100,7 +100,6 @@ else:
                 predicted_price = prediction[0]
 
                 st.subheader("🎉 Hasil Prediksi Harga")
-                # Menampilkan hasil dengan format mata uang Euro
-                st.success(f"**Estimasi Harga Laptop: €{predicted_price:,.2f}**")
+                st.success(f"**Estimasi Harga Laptop: {predicted_price:,.2f} Juta**")
             except Exception as e:
                 st.error(f"Terjadi error saat prediksi: {e}")
