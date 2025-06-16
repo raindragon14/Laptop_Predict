@@ -18,19 +18,19 @@ def load_data():
     try:
         df = pd.read_csv('laptop_prices.csv', encoding='latin-1')
         
-        if df['Ram'].dtype == 'object':
+        if 'Ram' in df.columns and df['Ram'].dtype == 'object':
             df['Ram'] = df['Ram'].str.replace('GB', '').astype('int32')
-        if df['Weight'].dtype == 'object':
+        if 'Weight' in df.columns and df['Weight'].dtype == 'object':
             df['Weight'] = df['Weight'].str.replace('kg', '').astype('float32')
             
-        # PERBAIKAN: Membuat kolom 'Inches' dari 'ScreenResolution'
+        # Feature Engineering: Membuat kolom 'Inches' dari 'ScreenResolution'
         if 'ScreenResolution' in df.columns:
-            df['Inches'] = df['ScreenResolution'].str.extract(r'(\d+\.\d+)').astype(float)
+            df['Inches'] = df['ScreenResolution'].str.extract(r'(\d+\.?\d+)').astype(float)
         
-        # Hapus baris dengan nilai NaN setelah ekstraksi (jika ada)
-        df.dropna(subset=['Inches'], inplace=True)
+        # Menghapus baris dengan nilai NaN yang mungkin muncul setelah ekstraksi
+        df.dropna(subset=['Inches', 'Weight', 'Ram'], inplace=True)
         return df
-    except (FileNotFoundError, AttributeError) as e:
+    except (FileNotFoundError, AttributeError, KeyError) as e:
         st.error(f"Gagal memuat atau memproses data: {e}")
         return None
 
@@ -41,15 +41,16 @@ if df is not None and 'Inches' in df.columns:
 
     features = ['Company', 'TypeName', 'Ram', 'Weight', 'OpSys', 'Inches']
     target = 'Price_euros'
+    
     X = df[features]
     y = df[target]
 
-    st.write("Fitur yang digunakan:", features)
+    st.write("Fitur yang akan digunakan:", features)
     st.write("Target prediksi:", target)
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
     
-    st.markdown(f"Data dibagi menjadi: - **Data Latih**: {X_train.shape[0]} baris, - **Data Uji**: {X_test.shape[0]} baris")
+    st.markdown(f"Data telah dibagi menjadi:  \n- **Data Latih**: {X_train.shape[0]} baris  \n- **Data Uji**: {X_test.shape[0]} baris")
 
     numeric_features = ['Ram', 'Weight', 'Inches']
     categorical_features = ['Company', 'TypeName', 'OpSys']
@@ -79,4 +80,4 @@ if df is not None and 'Inches' in df.columns:
             st.metric(label="**R-squared (R²)**", value=f"{r2:.2f}")
             st.metric(label="**Mean Absolute Error (MAE)**", value=f"€{mae:.2f}")
 else:
-    st.error("Gagal memuat data atau kolom 'Inches' tidak dapat dibuat. Pelatihan tidak dapat dilanjutkan.")
+    st.error("Gagal memuat data atau membuat fitur 'Inches'. Pastikan file 'laptop_prices.csv' benar dan memiliki kolom 'ScreenResolution'. Pelatihan tidak dapat dilanjutkan.")
