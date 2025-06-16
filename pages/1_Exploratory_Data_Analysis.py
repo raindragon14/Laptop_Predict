@@ -1,5 +1,3 @@
-# pages/1_📊_Exploratory_Data_Analysis.py
-
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -11,7 +9,7 @@ st.set_page_config(page_title="EDA", page_icon="📊", layout="wide")
 st.title("📊 Exploratory Data Analysis (EDA)")
 st.markdown("Mari kita jelajahi karakteristik dari dataset harga laptop.")
 
-# Fungsi untuk memuat data (dengan caching)
+# Fungsi untuk memuat data (dengan caching dan perbaikan)
 @st.cache_data
 def load_data():
     try:
@@ -43,8 +41,8 @@ if df is not None:
 
     # 1. Distribusi Harga
     st.subheader("1. Distribusi Harga Laptop")
-    fig = px.histogram(df, x='Price_euros', nbins=50, title='Distribusi Harga Laptop (dalam Euro)')
-    st.plotly_chart(fig, use_container_width=True)
+    fig_price = px.histogram(df, x='Price_euros', nbins=50, title='Distribusi Harga Laptop (dalam Euro)')
+    st.plotly_chart(fig_price, use_container_width=True)
     st.markdown("""
     **Insight**: Distribusi harga cenderung *right-skewed*, yang berarti sebagian besar laptop berada di rentang harga yang lebih rendah, dengan beberapa model premium yang sangat mahal.
     """)
@@ -52,20 +50,22 @@ if df is not None:
     col1, col2 = st.columns(2)
 
     with col1:
-    # 2. Jumlah Laptop per Perusahaan
-    st.subheader("2. Jumlah Laptop per Brand")
+        # 2. Jumlah Laptop per Perusahaan (Dengan Perbaikan)
+        st.subheader("2. Jumlah Laptop per Brand")
 
-    company_counts = df['Company'].value_counts().reset_index()
-    company_counts.columns = ['Brand', 'Jumlah']  # Ganti nama kolom menjadi 'Brand' dan 'Jumlah'
+        # Buat DataFrame baru dengan nama kolom yang jelas
+        company_counts = df['Company'].value_counts().reset_index()
+        company_counts.columns = ['Brand', 'Jumlah']  # Ganti nama kolom
 
-    fig_company = px.bar(company_counts,
-                         x='Brand',
-                         y='Jumlah',
-                         title='Jumlah Laptop Berdasarkan Brand',
-                         labels={'Brand': 'Brand Laptop', 'Jumlah': 'Jumlah Unit'}) # Sesuaikan label jika perlu
+        # Gunakan nama kolom baru di dalam plot
+        fig_company = px.bar(company_counts,
+                             x='Brand',
+                             y='Jumlah',
+                             title='Jumlah Laptop Berdasarkan Brand',
+                             labels={'Brand': 'Brand Laptop', 'Jumlah': 'Jumlah Unit'})
 
-    st.plotly_chart(fig_company, use_container_width=True)
-    st.markdown("**Insight**: Dell, Lenovo, dan HP mendominasi pasar.")
+        st.plotly_chart(fig_company, use_container_width=True)
+        st.markdown("**Insight**: Dell, Lenovo, dan HP mendominasi pasar.")
 
     with col2:
         # 3. Tipe Laptop
@@ -91,7 +91,7 @@ if df is not None:
     sns.heatmap(corr, annot=True, cmap='coolwarm', ax=ax)
     st.pyplot(fig_heatmap)
     st.markdown("""
-    **Insight**: **RAM** dan **CPU Speed (jika ada)** memiliki korelasi positif yang cukup kuat dengan harga. **Screen Resolution** juga berpengaruh. Ini adalah kandidat fitur yang baik untuk model kita.
+    **Insight**: **RAM** memiliki korelasi positif yang cukup kuat dengan harga. Ini adalah kandidat fitur yang baik untuk model kita.
     """)
 else:
     st.warning("Data tidak dapat dimuat.")
