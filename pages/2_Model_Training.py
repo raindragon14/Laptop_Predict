@@ -49,7 +49,7 @@ if df is not None and 'Inches' in df.columns:
     st.markdown(f"Data telah dibagi menjadi:  \n- **Data Latih**: {X_train.shape[0]} baris  \n- **Data Uji**: {X_test.shape[0]} baris")
 
     numeric_features = ['Ram', 'Weight', 'Inches']
-    categorical_features = ['Company', 'TypeName', 'OpSys']
+    categorical_features = ['Company', 'TypeName', 'OS']
 
     preprocessor = ColumnTransformer(
         transformers=[
