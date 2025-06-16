@@ -76,6 +76,6 @@ if df is not None and 'Inches' in df.columns:
 
             st.success("🎉 Model berhasil dilatih dan disimpan!")
             st.metric(label="**R-squared (R²)**", value=f"{r2:.2f}")
-            st.metric(label="**Mean Absolute Error (MAE)**", value=f"Juta{mae:.2f}")
+            st.metric(label="**Mean Absolute Error (MAE)**", value=f"{mae:.2f} Juta")
 else:
     st.error("Gagal memuat data")
