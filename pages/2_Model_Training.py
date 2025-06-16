@@ -1,159 +1,153 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import re # Diperlukan untuk ekstraksi fitur dengan regular expression
+import re
 from sklearn.model_selection import train_test_split
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.preprocessing import OneHotEncoder, StandardScaler, LabelEncoder
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import r2_score, mean_absolute_error
 import joblib
 
-st.set_page_config(page_title="Model Training (Advanced)", page_icon="🚀", layout="wide")
+st.set_page_config(page_title="Model Training (Final)", page_icon="🏆", layout="wide")
 
-st.title("🚀 Pelatihan Model Machine Learning (Versi Lanjutan)")
-st.markdown("Model ini telah disempurnakan dengan menambahkan fitur-fitur baru dari CPU, GPU, dan Storage untuk prediksi harga yang lebih akurat.")
+st.title("🏆 Pelatihan Model Machine Learning (Versi Final)")
+st.markdown("Model ini disesuaikan untuk bekerja dengan dataset yang sudah diproses dan menggunakan fitur-fitur yang lebih lengkap seperti detail layar dan komponen.")
 
 # Konstanta untuk konversi ke Juta Rupiah
 KURS_KE_JUTA_IDR = 17500 / 1000000 # Kurs Euro ke Rupiah, lalu ke Juta
 
-def process_memory(memory_str):
-    """Fungsi untuk mengekstrak ukuran dan tipe storage utama."""
-    memory_str = str(memory_str).strip().lower()
-    
-    # Ambil komponen pertama jika ada kombinasi storage (e.g., '256GB SSD + 1TB HDD')
-    if '+' in memory_str:
-        memory_str = memory_str.split('+')[0].strip()
-
-    # Tentukan tipe storage
-    storage_type = 'Other'
-    if 'ssd' in memory_str:
-        storage_type = 'SSD'
-    elif 'hdd' in memory_str:
-        storage_type = 'HDD'
-    elif 'flash' in memory_str:
-        storage_type = 'Flash Storage'
-    elif 'hybrid' in memory_str:
-        storage_type = 'Hybrid'
-    
-    # Ekstrak ukuran storage dalam GB
-    size_gb = 0
-    num_match = re.search(r'(\d+\.?\d*)', memory_str)
-    if num_match:
-        size = float(num_match.group(1))
-        if 'tb' in memory_str:
-            size_gb = size * 1000  # Konversi TB ke GB (1TB ~ 1000GB)
-        else:  # Asumsi dalam GB
-            size_gb = size
-            
-    return pd.Series([size_gb, storage_type])
-
 @st.cache_data
-def load_data():
-    """Memuat, membersihkan, dan melakukan rekayasa fitur pada data."""
+def load_data(file_path='laptop_prices.csv'):
+    """Memuat data yang sudah bersih dan diproses."""
     try:
-        df = pd.read_csv('laptop_prices.csv', encoding='latin-1')
+        df = pd.read_csv(file_path, encoding='latin-1')
         
-        # --- Pembersihan Data Awal ---
+        # Mengganti nama kolom agar konsisten (menghilangkan spasi)
+        # Ini penting agar bisa diakses sebagai atribut.
+        df.rename(columns={
+            'Price': 'Price_euros',
+            'ScreenResolution': 'Screen',
+            'Cpu': 'CPU_model',
+            'Gpu': 'GPU_model',
+            'Memory': 'Storage'
+        }, inplace=True, errors='ignore') # errors='ignore' jika kolom tidak ada
+        
+        # --- Asumsi kolom-kolom hasil rekayasa fitur sudah ada ---
+        # Jika tidak, bagian ini bisa diaktifkan kembali
+        # Contoh: Jika masih perlu ekstraksi GPU brand
+        if 'Gpu' in df.columns and 'GPU_company' not in df.columns:
+            st.info("Melakukan rekayasa fitur untuk GPU...")
+            df['GPU_company'] = df['Gpu'].apply(lambda x: str(x).split()[0])
+
+        # --- Konversi Yes/No ke 1/0 agar bisa diproses ---
+        # Menggunakan LabelEncoder untuk kolom biner
+        for col in ['Touchscreen', 'IPSpanel']:
+            if col in df.columns and df[col].dtype == 'object':
+                le = LabelEncoder()
+                df[col] = le.fit_transform(df[col])
+        
+        # --- Pembersihan Kolom Numerik Lainnya ---
         if 'Ram' in df.columns and df['Ram'].dtype == 'object':
             df['Ram'] = df['Ram'].str.replace('GB', '', regex=False).astype('int32')
         if 'Weight' in df.columns and df['Weight'].dtype == 'object':
             df['Weight'] = df['Weight'].str.replace('kg', '', regex=False).astype('float32')
-        
-        # --- Rekayasa Fitur (Feature Engineering) ---
-        # 1. Fitur CPU
-        df['CPU_company'] = df['Cpu'].apply(lambda x: str(x).split()[0])
-        # Ekstrak frekuensi CPU (GHz), tangani jika tidak ditemukan
-        df['CPU_freq'] = df['Cpu'].str.extract(r'(\d\.?\d*)GHz').astype(float)
-        df['CPU_freq'].fillna(df['CPU_freq'].median(), inplace=True) # Isi nilai hilang dengan median
-        
-        # 2. Fitur GPU
-        df['GPU_brand'] = df['Gpu'].apply(lambda x: str(x).split()[0])
 
-        # 3. Fitur Storage
-        storage_features = df['Memory'].apply(process_memory)
-        storage_features.columns = ['PrimaryStorage', 'PrimaryStorageType']
-        df = pd.concat([df, storage_features], axis=1)
-
-        # Hapus kolom yang tidak terpakai setelah ekstraksi
-        df = df.drop(['Cpu', 'Gpu', 'Memory'], axis=1)
-        
         # --- Konversi Harga & Finalisasi ---
-        df['Harga_IDR'] = df['Price_euros'] * KURS_KE_JUTA_IDR
-        df = df.drop('Price_euros', axis=1)
+        if 'Price_euros' in df.columns:
+            df['Harga_IDR'] = df['Price_euros'] * KURS_KE_JUTA_IDR
+            df = df.drop('Price_euros', axis=1)
         
         # Menghapus baris dengan data yang hilang pada fitur utama
-        df.dropna(subset=['Inches', 'Weight', 'Ram', 'PrimaryStorage'], inplace=True)
+        # Pastikan kolom-kolom ini ada di file Anda
+        required_cols = ['Inches', 'Ram', 'Weight', 'Harga_IDR', 'CPU_freq', 'PrimaryStorage', 'ScreenW', 'ScreenH']
+        df.dropna(subset=[col for col in required_cols if col in df.columns], inplace=True)
+        
+        st.success("Data berhasil dimuat dan disiapkan!")
         return df
+        
+    except FileNotFoundError:
+        st.error(f"File '{file_path}' tidak ditemukan. Pastikan file berada di direktori yang benar.")
+        return None
     except Exception as e:
-        st.error(f"Gagal memuat atau memproses data: {e}")
+        st.error(f"Terjadi kesalahan saat memuat atau memproses data: {e}")
         return None
 
-df = load_data()
+# Di sini, Anda mungkin perlu mengubah nama file jika berbeda
+df = load_data('laptop_prices.csv')
 
 if df is not None:
     st.header("Persiapan Data untuk Pelatihan")
 
-    # Fitur yang digunakan sekarang lebih banyak
-    features = ['Company', 'TypeName', 'Ram', 'Weight', 'OS', 'Inches', 
-                'CPU_company', 'GPU_brand', 'PrimaryStorage', 'PrimaryStorageType', 'CPU_freq']
+    # Fitur yang digunakan sekarang disesuaikan dengan dataset baru yang lebih kaya
+    features = [
+        'Company', 'TypeName', 'Ram', 'Weight', 'OS', 'Inches', 
+        'CPU_company', 'CPU_freq', 'GPU_company', 'PrimaryStorage', 'PrimaryStorageType',
+        'ScreenW', 'ScreenH', 'Touchscreen', 'IPSpanel'
+    ]
+    
+    # Filter fitur yang benar-benar ada di DataFrame untuk menghindari error
+    available_features = [f for f in features if f in df.columns]
     target = 'Harga_IDR'
-    
-    X = df[features]
-    y = df[target]
 
-    st.write("Fitur yang akan digunakan:", features)
-    st.write("Target prediksi:", target)
+    if target not in df.columns:
+        st.error(f"Kolom target '{target}' tidak ditemukan dalam data.")
+    else:
+        X = df[available_features]
+        y = df[target]
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    
-    st.markdown(f"Data telah dibagi menjadi:  \n- **Data Latih**: {X_train.shape[0]} baris  \n- **Data Uji**: {X_test.shape[0]} baris")
+        st.write("**Fitur yang akan digunakan:**", available_features)
+        st.write("**Target prediksi:**", target)
+        st.dataframe(X.head())
 
-    # --- Pipeline Pra-pemrosesan Data (Diperbarui) ---
-    numeric_features = ['Ram', 'Weight', 'Inches', 'CPU_freq', 'PrimaryStorage']
-    categorical_features = ['Company', 'TypeName', 'OS', 'CPU_company', 'GPU_brand', 'PrimaryStorageType']
-
-    preprocessor = ColumnTransformer(
-        transformers=[
-            ('num', StandardScaler(), numeric_features),
-            ('cat', OneHotEncoder(handle_unknown='ignore', drop='first'), categorical_features)
-        ], remainder='passthrough')
-
-    # --- Pipeline Model ---
-    model = Pipeline(steps=[
-        ('preprocessor', preprocessor),
-        ('regressor', RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=-1))
-    ])
-
-    st.header("Mulai Pelatihan Model")
-    if st.button("Latih Model dengan Fitur Baru", type="primary"):
-        with st.spinner("Model sedang dilatih dengan data yang lebih kaya, mohon tunggu..."):
-            
-            # Transformasi logaritmik pada target untuk menstabilkan varians
-            y_train_log = np.log1p(y_train)
-            
-            # Melatih model dengan target yang sudah ditransformasi
-            model.fit(X_train, y_train_log)
-            
-            # Menyimpan model yang sudah dilatih
-            joblib.dump(model, 'advanced_model_pipeline.joblib')
-            
-            # Prediksi dan transformasi balik ke skala asli
-            y_pred_log = model.predict(X_test)
-            y_pred = np.expm1(y_pred_log)
-            
-            r2 = r2_score(y_test, y_pred)
-            mae = mean_absolute_error(y_test, y_pred)
-
-        st.success("🎉 Model lanjutan berhasil dilatih dan disimpan!")
-        st.info("Model ini sekarang menggunakan detail CPU, GPU, dan Storage untuk meningkatkan performa.")
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
         
-        col1, col2 = st.columns(2)
-        with col1:
-            st.metric(label="**R-squared (R²)**", value=f"{r2:.3f}", help="Metrik ini menunjukkan seberapa baik fitur-fitur baru dapat menjelaskan variasi harga laptop. Semakin mendekati 1, semakin baik.")
-        with col2:
-            st.metric(label="**Mean Absolute Error (MAE)**", value=f"Rp {mae:.2f} Juta", help="Rata-rata kesalahan absolut prediksi harga. Semakin rendah, semakin akurat modelnya.")
+        st.markdown(f"Data telah dibagi menjadi:  \n- **Data Latih**: {X_train.shape[0]} baris  \n- **Data Uji**: {X_test.shape[0]} baris")
+
+        # --- Pipeline Pra-pemrosesan Data (Diperbarui) ---
+        numeric_features = [f for f in ['Ram', 'Weight', 'Inches', 'CPU_freq', 'PrimaryStorage', 'ScreenW', 'ScreenH', 'Touchscreen', 'IPSpanel'] if f in X.columns]
+        categorical_features = [f for f in ['Company', 'TypeName', 'OS', 'CPU_company', 'GPU_company', 'PrimaryStorageType'] if f in X.columns]
+
+        preprocessor = ColumnTransformer(
+            transformers=[
+                ('num', StandardScaler(), numeric_features),
+                ('cat', OneHotEncoder(handle_unknown='ignore', drop='first'), categorical_features)
+            ], remainder='passthrough')
+
+        # --- Pipeline Model ---
+        model = Pipeline(steps=[
+            ('preprocessor', preprocessor),
+            ('regressor', RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=-1, oob_score=True))
+        ])
+
+        st.header("Mulai Pelatihan Model")
+        if st.button("Latih Model dengan Dataset Final", type="primary"):
+            with st.spinner("Model sedang dilatih dengan data yang lebih lengkap, mohon tunggu..."):
+                
+                y_train_log = np.log1p(y_train)
+                model.fit(X_train, y_train_log)
+                
+                joblib.dump(model, 'final_model_pipeline.joblib')
+                
+                y_pred_log = model.predict(X_test)
+                y_pred = np.expm1(y_pred_log)
+                
+                r2 = r2_score(y_test, y_pred)
+                mae = mean_absolute_error(y_test, y_pred)
+                oob = model.named_steps['regressor'].oob_score_
+
+            st.success("🎉 Model final berhasil dilatih dan disimpan!")
+            st.info("Model ini dilatih menggunakan fitur-fitur yang lebih spesifik untuk prediksi yang lebih kuat.")
+            
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric(label="**R-squared (R²)**", value=f"{r2:.3f}", help="Menunjukkan seberapa baik fitur-fitur menjelaskan variasi harga. Semakin mendekati 1, semakin baik.")
+            with col2:
+                st.metric(label="**Mean Absolute Error (MAE)**", value=f"Rp {mae:.2f} Juta", help="Rata-rata kesalahan prediksi harga. Semakin rendah, semakin akurat.")
+            with col3:
+                st.metric(label="**Out-of-Bag (OOB) Score**", value=f"{oob:.3f}", help="Skor validasi internal dari RandomForest, mirip dengan R² pada data yang tidak terlihat saat training.")
+
 else:
     st.error("Gagal memuat data. Pelatihan tidak bisa dilanjutkan.")
 
