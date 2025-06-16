@@ -8,6 +8,7 @@ st.set_page_config(page_title="EDA", page_icon="📊", layout="wide")
 
 st.title("📊 Exploratory Data Analysis (EDA)")
 st.markdown("Mari kita jelajahi karakteristik dari dataset harga laptop.")
+KURS_EUR_TO_IDR = 0.0175
 
 # Fungsi untuk memuat data (dengan caching dan perbaikan)
 @st.cache_data
@@ -15,12 +16,13 @@ def load_data():
     try:
         df = pd.read_csv('laptop_prices.csv', encoding='latin-1')
         
-        # PERBAIKAN: Hanya proses jika kolomnya adalah string (object)
         if df['Ram'].dtype == 'object':
             df['Ram'] = df['Ram'].str.replace('GB', '').astype('int32')
         
         if df['Weight'].dtype == 'object':
             df['Weight'] = df['Weight'].str.replace('kg', '').astype('float32')
+
+        df['Harga_IDR'] = (df['Price_euros'] * KURS_EUR_TO_IDR).astype(np.int64)
             
         return df
     except FileNotFoundError:
@@ -41,7 +43,7 @@ if df is not None:
 
     # 1. Distribusi Harga
     st.subheader("1. Distribusi Harga Laptop")
-    fig_price = px.histogram(df, x='Price_euros', nbins=50, title='Distribusi Harga Laptop (dalam Euro)')
+    fig_price = px.histogram(df, x='Harga_IDR', nbins=50, title='Distribusi Harga Laptop (Satuan Juta)')
     st.plotly_chart(fig_price, use_container_width=True)
     st.markdown("""
     **Insight**: Distribusi harga cenderung *right-skewed*, yang berarti sebagian besar laptop berada di rentang harga yang lebih rendah, dengan beberapa model premium yang sangat mahal.
@@ -76,8 +78,8 @@ if df is not None:
 
     # 4. Hubungan antara RAM dan Harga
     st.subheader("4. Hubungan RAM dengan Harga")
-    fig_ram_price = px.box(df, x='Ram', y='Price_euros', title='Box Plot Harga berdasarkan Ukuran RAM',
-                           labels={'Ram': 'RAM (GB)', 'Price_euros': 'Harga (Euro)'})
+    fig_ram_price = px.box(df, x='Ram', y='Harga_IDR', title='Box Plot Harga berdasarkan Ukuran RAM',
+                           labels={'Ram': 'RAM (GB)', 'Harga_IDR': 'Harga'})
     st.plotly_chart(fig_ram_price, use_container_width=True)
     st.markdown("""
     **Insight**: Terlihat jelas korelasi positif. Semakin besar RAM, median harga cenderung semakin tinggi. Laptop dengan RAM 32GB memiliki variasi harga yang sangat luas.
