@@ -79,7 +79,7 @@ if df is not None:
     """)
     
     st.subheader("5. Heatmap Korelasi Fitur Numerik")
-    numeric_df = df.select_dtypes(include=['int32', 'float32', 'float64'])
+    numeric_df = df.select_dtypes(include=['int32', 'float32', 'float64','int64'])
     corr = numeric_df.corr()
     fig_heatmap, ax = plt.subplots(figsize=(10, 7))
     sns.heatmap(corr, annot=True, cmap='coolwarm', ax=ax)
