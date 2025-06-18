@@ -11,17 +11,18 @@ import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-st.set_page_config(page_title="Laptop Price Prediction (Optimized Model)", page_icon="💻", layout="wide")
+# Konfigurasi halaman Streamlit
+st.set_page_config(page_title="Prediksi Harga Laptop (Model Teroptimisasi)", page_icon="💻", layout="wide")
 
-st.title("💻 Laptop Price Prediction (Optimized Model)")
-st.markdown("Please provide the laptop specifications below to obtain an accurate price estimation using our optimized ensemble model.")
+st.title("💻 Prediksi Harga Laptop (Model Teroptimisasi)")
+st.markdown("Silakan masukkan spesifikasi laptop di bawah ini untuk mendapatkan estimasi harga yang akurat menggunakan model ensemble kami yang teroptimisasi.")
 
-# Model path for fine tuned model
+# Path untuk model dan data
 MODEL_PATH = 'optimized_weighted_ensemble_laptop_price_model.joblib'
 DATA_PATH = 'laptop_prices.csv'
 
 def process_memory(memory_str):
-    """Process memory string to extract storage type and size"""
+    """Memproses string memori untuk mengekstrak tipe dan ukuran penyimpanan"""
     memory_str = str(memory_str).strip().lower()
     if '+' in memory_str:
         memory_str = memory_str.split('+')[0].strip()
@@ -39,81 +40,81 @@ def process_memory(memory_str):
 
 def create_engineered_features(df):
     """
-    Create additional features required by the optimized model
-    Based on feature engineering methodology
+    Membuat fitur-fitur tambahan yang dibutuhkan oleh model teroptimisasi
+    berdasarkan metodologi rekayasa fitur (feature engineering).
     """
     df = df.copy()
     
-    # 1. Screen Area
-    df['ScreenArea'] = df['ScreenW'] * df['ScreenH'] / 1000000  # in million pixels
+    # 1. Area Layar
+    df['ScreenArea'] = df['ScreenW'] * df['ScreenH'] / 1000000  # dalam juta piksel
     
-    # 2. Pixel Density
+    # 2. Kepadatan Piksel
     df['PixelDensity'] = np.sqrt(df['ScreenW']**2 + df['ScreenH']**2) / df['Inches']
     
-    # 3. RAM per inch (RAM efficiency based on screen size)
+    # 3. RAM per inci (efisiensi RAM berdasarkan ukuran layar)
     df['RAM_per_inch'] = df['Ram'] / df['Inches']
     
-    # 4. Storage per RAM ratio
+    # 4. Rasio Penyimpanan per RAM
     df['Storage_per_RAM'] = df['PrimaryStorage'] / np.maximum(df['Ram'], 1)
     
-    # 5. Size Weight ratio (portability)
+    # 5. Rasio Ukuran terhadap Berat (portabilitas)
     df['Size_Weight_ratio'] = df['Inches'] / np.maximum(df['Weight'], 0.1)
     
-    # 6. RAM CPU interaction
+    # 6. Interaksi RAM dan CPU
     df['RAM_CPU_interaction'] = df['Ram'] * df['CPU_freq']
     
-    # 7. Premium Brand Indicator
+    # 7. Indikator Merek Premium
     premium_brands = ['Apple', 'Dell', 'HP', 'Lenovo', 'Asus', 'Microsoft', 'Razer']
     df['Is_Premium_Brand'] = df['Company'].apply(lambda x: 1 if x in premium_brands else 0)
     
-    # 8. Performance Score (combined performance factors)
-    # Feature normalization for scoring
-    ram_norm = np.log1p(df['Ram']) / np.log1p(64)  # Max RAM 64GB
-    cpu_norm = df['CPU_freq'] / 4.0  # Max CPU freq 4GHz
-    storage_norm = np.log1p(df['PrimaryStorage']) / np.log1p(2048)  # Max storage 2TB
+    # 8. Skor Performa (kombinasi faktor performa)
+    # Normalisasi fitur untuk penilaian
+    ram_norm = np.log1p(df['Ram']) / np.log1p(64)  # Maks RAM 64GB
+    cpu_norm = df['CPU_freq'] / 4.0  # Maks frekuensi CPU 4GHz
+    storage_norm = np.log1p(df['PrimaryStorage']) / np.log1p(2048)  # Maks penyimpanan 2TB
     
-    # Weighted performance score
+    # Skor performa berbobot
     df['Performance_Score'] = (
         ram_norm * 0.4 +           # RAM 40%
         cpu_norm * 0.35 +          # CPU 35%
-        storage_norm * 0.15 +      # Storage 15%
-        df['PixelDensity'] / 500 * 0.1  # Display quality 10%
+        storage_norm * 0.15 +      # Penyimpanan 15%
+        df['PixelDensity'] / 500 * 0.1  # Kualitas tampilan 10%
     )
     
-    # 9. Portability Score
+    # 9. Skor Portabilitas
     df['Portability_Score'] = (
-        (5.0 - df['Weight']) / 4.0 * 0.6 +  # Weight factor (lighter is better)
-        (20.0 - df['Inches']) / 10.0 * 0.4   # Size factor (smaller is better)
+        (5.0 - df['Weight']) / 4.0 * 0.6 +  # Faktor berat (lebih ringan lebih baik)
+        (20.0 - df['Inches']) / 10.0 * 0.4   # Faktor ukuran (lebih kecil lebih baik)
     )
-    # Clamp to 0-1 range
+    # Batasi skor dalam rentang 0-1
     df['Portability_Score'] = np.clip(df['Portability_Score'], 0, 1)
     
     return df
 
 @st.cache_resource
 def load_model():
-    """Load the optimized ensemble model"""
+    """Memuat model ensemble yang teroptimisasi"""
     if not os.path.exists(MODEL_PATH):
-        st.error(f"Model file '{MODEL_PATH}' not found. Please ensure the model has been trained.")
+        st.error(f"File model '{MODEL_PATH}' tidak ditemukan. Pastikan model telah dilatih.")
         return None
     try:
         model = joblib.load(MODEL_PATH)
-        st.success("✅ Optimized model loaded successfully!")
+        st.success("✅ Model teroptimisasi berhasil dimuat!")
         return model
     except Exception as e:
-        st.error(f"Failed to load model: {e}")
+        st.error(f"Gagal memuat model: {e}")
         return None
 
 @st.cache_data
 def get_data_options():
-    """Load data to obtain input options"""
+    """Memuat data untuk mendapatkan pilihan input"""
     if not os.path.exists(DATA_PATH):
-        st.error(f"Data file '{DATA_PATH}' not found.")
+        st.error(f"File data '{DATA_PATH}' tidak ditemukan.")
         return None
     try:
         df = pd.read_csv(DATA_PATH, encoding='latin-1')
         
-        # Consistent preprocessing with other pages
+        # Pra-pemrosesan yang konsisten dengan halaman lain
         if 'Ram' in df.columns and df['Ram'].dtype == 'object':
             df['Ram'] = df['Ram'].str.replace('GB', '', regex=False).astype('int32')
         
@@ -122,123 +123,63 @@ def get_data_options():
 
         return df
     except Exception as e:
-        st.error(f"Failed to process data for input options: {e}")
+        st.error(f"Gagal memproses data untuk pilihan input: {e}")
         return None
 
 @st.cache_data
 def get_model_performance_metrics():
+    """Mendapatkan data metrik performa model yang telah disimpan"""
     return {
-        'weighted_ensemble': {
-            'name': 'Weighted Ensemble (Best)',
-            'r2': 0.8694,
-            'mae': 2.6766,
-            'rmse': 3.67,
-            'mape': 15.8,
-            'rank': 1
-        },
-        'voting_ensemble': {
-            'name': 'Voting Ensemble',
-            'r2': 0.8694,
-            'mae': 2.6765,
-            'rmse': 3.67,
-            'mape': 15.8,
-            'rank': 2
-        },
-        'xgboost': {
-            'name': 'XGBoost',
-            'r2': 0.8630,
-            'mae': 2.8458,
-            'rmse': 3.84,
-            'mape': 16.9,
-            'rank': 3
-        },
-        'gradient_boosting': {
-            'name': 'Gradient Boosting',
-            'r2': 0.8610,
-            'mae': 2.9091,
-            'rmse': 3.95,
-            'mape': 17.3,
-            'rank': 4
-        },
-        'extra_trees': {
-            'name': 'Extra Trees',
-            'r2': 0.8527,
-            'mae': 2.9653,
-            'rmse': 4.05,
-            'mape': 17.8,
-            'rank': 5
-        },
-        'random_forest': {
-            'name': 'Random Forest',
-            'r2': 0.8497,
-            'mae': 2.8770,
-            'rmse': 3.93,
-            'mape': 17.1,
-            'rank': 6
-        },
-        'lightgbm': {
-            'name': 'LightGBM',
-            'r2': 0.8466,
-            'mae': 2.8579,
-            'rmse': 3.91,
-            'mape': 17.0,
-            'rank': 7
-        }
+        'weighted_ensemble': {'name': 'Weighted Ensemble (Terbaik)', 'r2': 0.8694, 'mae': 2.6766, 'rmse': 3.67, 'mape': 15.8, 'rank': 1},
+        'voting_ensemble': {'name': 'Voting Ensemble', 'r2': 0.8694, 'mae': 2.6765, 'rmse': 3.67, 'mape': 15.8, 'rank': 2},
+        'xgboost': {'name': 'XGBoost', 'r2': 0.8630, 'mae': 2.8458, 'rmse': 3.84, 'mape': 16.9, 'rank': 3},
+        'gradient_boosting': {'name': 'Gradient Boosting', 'r2': 0.8610, 'mae': 2.9091, 'rmse': 3.95, 'mape': 17.3, 'rank': 4},
+        'extra_trees': {'name': 'Extra Trees', 'r2': 0.8527, 'mae': 2.9653, 'rmse': 4.05, 'mape': 17.8, 'rank': 5},
+        'random_forest': {'name': 'Random Forest', 'r2': 0.8497, 'mae': 2.8770, 'rmse': 3.93, 'mape': 17.1, 'rank': 6},
+        'lightgbm': {'name': 'LightGBM', 'r2': 0.8466, 'mae': 2.8579, 'rmse': 3.91, 'mape': 17.0, 'rank': 7}
     }
 
 @st.cache_data
 def load_model_performance():
-    """Load model performance metrics"""
+    """Memuat metrik performa model"""
     try:
-        # Try to load metrics from file if available
         metrics_path = 'model_performance_metrics.joblib'
         if os.path.exists(metrics_path):
             metrics = joblib.load(metrics_path)
             return metrics
         else:
             performance_metrics = get_model_performance_metrics()
-            # Return weighted ensemble (best model) as default
             best_metrics = performance_metrics['weighted_ensemble']
             return {
-                'r2': best_metrics['r2'],
-                'mae': best_metrics['mae'],
-                'rmse': best_metrics['rmse'],
-                'mape': best_metrics['mape'],
-                'n_samples': 255,  # 20% of 1275 data points
-                'model_name': best_metrics['name'],
-                'rank': best_metrics['rank']
+                'r2': best_metrics['r2'], 'mae': best_metrics['mae'], 'rmse': best_metrics['rmse'],
+                'mape': best_metrics['mape'], 'n_samples': 255,  # 20% dari 1275 data
+                'model_name': best_metrics['name'], 'rank': best_metrics['rank']
             }
     except Exception as e:
-        st.warning(f"Unable to load model performance data: {e}")
+        st.warning(f"Tidak dapat memuat data performa model: {e}")
         return None
 
 def display_model_comparison():
-    st.header("📊 Model Performance Comparison")
+    """Menampilkan perbandingan performa antar model"""
+    st.header("📊 Perbandingan Performa Model")
     
     performance_metrics = get_model_performance_metrics()
     
-    # Create comparison DataFrame
     comparison_data = []
     for model_key, metrics in performance_metrics.items():
         comparison_data.append({
-            'Model': metrics['name'],
-            'Rank': metrics['rank'],
-            'R² Score': metrics['r2'],
-            'MAE (Million IDR)': metrics['mae'],
-            'RMSE (Million IDR)': metrics['rmse'],
-            'MAPE (%)': metrics['mape']
+            'Model': metrics['name'], 'Peringkat': metrics['rank'], 'Skor R²': metrics['r2'],
+            'MAE (Juta IDR)': metrics['mae'], 'RMSE (Juta IDR)': metrics['rmse'], 'MAPE (%)': metrics['mape']
         })
     
-    df_comparison = pd.DataFrame(comparison_data).sort_values('Rank')
+    df_comparison = pd.DataFrame(comparison_data).sort_values('Peringkat')
     
-    # Display as table with ranking
-    st.subheader("🏆 Model Performance Ranking")
+    st.subheader("🏆 Peringkat Performa Model")
     
-    # Style the dataframe
     def highlight_best(s):
-        if s.name == 'R² Score':
+        if s.name == 'Skor R²':
             return ['background-color: gold' if v == s.max() else '' for v in s]
-        elif s.name == 'MAE (Million IDR)':
+        elif s.name == 'MAE (Juta IDR)':
             return ['background-color: lightgreen' if v == s.min() else '' for v in s]
         else:
             return ['' for _ in s]
@@ -246,441 +187,292 @@ def display_model_comparison():
     styled_df = df_comparison.style.apply(highlight_best, axis=0)
     st.dataframe(styled_df, use_container_width=True)
     
-    # Create visualizations
     col1, col2 = st.columns(2)
     
     with col1:
-        # R² Score comparison
-        fig_r2 = px.bar(
-            df_comparison, 
-            x='Model', 
-            y='R² Score',
-            title='📊 R² Score Comparison',
-            color='R² Score',
-            color_continuous_scale='Viridis',
-            text='R² Score'
-        )
+        fig_r2 = px.bar(df_comparison, x='Model', y='Skor R²', title='📊 Perbandingan Skor R²',
+                        color='Skor R²', color_continuous_scale='Viridis', text='Skor R²')
         fig_r2.update_traces(texttemplate='%{text:.4f}', textposition='outside')
         fig_r2.update_layout(xaxis_tickangle=-45, height=500)
         st.plotly_chart(fig_r2, use_container_width=True)
     
     with col2:
-        # MAE comparison
-        fig_mae = px.bar(
-            df_comparison, 
-            x='Model', 
-            y='MAE (Million IDR)',
-            title='📉 MAE Comparison - Lower is Better',
-            color='MAE (Million IDR)',
-            color_continuous_scale='Reds_r',
-            text='MAE (Million IDR)'
-        )
+        fig_mae = px.bar(df_comparison, x='Model', y='MAE (Juta IDR)', title='📉 Perbandingan MAE - Lebih Rendah Lebih Baik',
+                         color='MAE (Juta IDR)', color_continuous_scale='Reds_r', text='MAE (Juta IDR)')
         fig_mae.update_traces(texttemplate='%{text:.3f}', textposition='outside')
         fig_mae.update_layout(xaxis_tickangle=-45, height=500)
         st.plotly_chart(fig_mae, use_container_width=True)
     
-    # Highlight best models
-    best_model = df_comparison.iloc[0]  # First row after sorting by rank
-    st.success(f"🏆 **Best Model:** {best_model['Model']} with R² Score: {best_model['R² Score']:.4f} and MAE: {best_model['MAE (Million IDR)']:.4f} Million IDR")
+    best_model = df_comparison.iloc[0]
+    st.success(f"🏆 **Model Terbaik:** {best_model['Model']} dengan Skor R²: {best_model['Skor R²']:.4f} dan MAE: {best_model['MAE (Juta IDR)']:.4f} Juta IDR")
     
-    # Performance insights
-    st.subheader("🔍 Performance Insights")
+    st.subheader("🔍 Wawasan Performa")
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.metric(
-            "🥇 Best R² Score", 
-            f"{df_comparison['R² Score'].max():.4f}",
-            help="Weighted Ensemble achieved the highest accuracy"
-        )
-    
+        st.metric("🥇 Skor R² Terbaik", f"{df_comparison['Skor R²'].max():.4f}", help="Weighted Ensemble mencapai akurasi tertinggi")
     with col2:
-        st.metric(
-            "🎯 Lowest MAE", 
-            f"{df_comparison['MAE (Million IDR)'].min():.4f} Million",
-            help="Lowest average error"
-        )
-    
+        st.metric("🎯 MAE Terendah", f"{df_comparison['MAE (Juta IDR)'].min():.4f} Juta", help="Rata-rata kesalahan (error) terendah")
     with col3:
-        performance_gap = df_comparison['R² Score'].max() - df_comparison['R² Score'].min()
-        st.metric(
-            "📊 Performance Gap", 
-            f"{performance_gap:.4f}",
-            help="Performance difference between best and worst models"
-        )
+        performance_gap = df_comparison['Skor R²'].max() - df_comparison['Skor R²'].min()
+        st.metric("📊 Kesenjangan Performa", f"{performance_gap:.4f}", help="Perbedaan performa antara model terbaik dan terburuk")
 
 def display_model_performance():
-    """Display model performance metrics with comprehensive analysis"""
-    st.header("🎯 Optimized Model Performance")
+    """Menampilkan metrik performa model dengan analisis komprehensif"""
+    st.header("🎯 Performa Model Teroptimisasi")
     
     metrics = load_model_performance()
     
     if metrics is None:
-        st.info("📈 Optimized model is ready for use! Performance metrics will be displayed when evaluation data becomes available.")
+        st.info("📈 Model teroptimisasi siap digunakan! Metrik performa akan ditampilkan saat data evaluasi tersedia.")
         return
     
-    # Performance summary banner
-    st.success(f"🏆 {metrics.get('model_name', 'Weighted Ensemble')} - Rank #{metrics.get('rank', 1)} - Top performing model from comprehensive evaluation")
+    st.success(f"🏆 {metrics.get('model_name', 'Weighted Ensemble')} - Peringkat #{metrics.get('rank', 1)} - Model dengan performa teratas dari evaluasi komprehensif")
     
-    # Display metrics in columns
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
-        st.metric(
-            label="🎯 R² Score",
-            value=f"{metrics['r2']:.4f}",
-            help="Coefficient of determination - closer to 1 indicates better performance",
-            delta=f"Rank #{metrics.get('rank', 1)} of 7 models"
-        )
-    
+        st.metric("🎯 Skor R²", f"{metrics['r2']:.4f}", help="Koefisien determinasi - semakin mendekati 1 semakin baik", delta=f"Peringkat #{metrics.get('rank', 1)} dari 7 model")
     with col2:
-        st.metric(
-            label="📊 MAE (Million IDR)",
-            value=f"{metrics['mae']:.4f}",
-            help="Mean Absolute Error - average absolute prediction error",
-            delta="Lowest error!" if metrics.get('rank', 1) == 1 else None
-        )
-    
+        st.metric("📊 MAE (Juta IDR)", f"{metrics['mae']:.4f}", help="Mean Absolute Error - rata-rata kesalahan prediksi absolut", delta="Kesalahan terendah!" if metrics.get('rank', 1) == 1 else None)
     with col3:
-        st.metric(
-            label="📈 RMSE (Million IDR)",
-            value=f"{metrics['rmse']:.2f}",
-            help="Root Mean Square Error - square root of average squared errors"
-        )
-    
+        st.metric("📈 RMSE (Juta IDR)", f"{metrics['rmse']:.2f}", help="Root Mean Square Error - akar kuadrat dari rata-rata kesalahan kuadrat")
     with col4:
-        st.metric(
-            label="📋 MAPE (%)",
-            value=f"{metrics['mape']:.1f}%",
-            help="Mean Absolute Percentage Error - average percentage error"
-        )
+        st.metric("📋 MAPE (%)", f"{metrics['mape']:.1f}%", help="Mean Absolute Percentage Error - rata-rata kesalahan persentase")
     
-    # Performance interpretation
-    st.subheader("🎯 Model Performance Interpretation")
+    st.subheader("🎯 Interpretasi Performa Model")
     
-    if metrics['r2'] >= 0.85:
-        performance_level = "Excellent"
-        performance_icon = "🌟"
-    elif metrics['r2'] >= 0.80:
-        performance_level = "Good"
-        performance_icon = "✅"
-    elif metrics['r2'] >= 0.75:
-        performance_level = "Satisfactory"
-        performance_icon = "⚡"
-    else:
-        performance_level = "Needs Improvement"
-        performance_icon = "⚠️"
+    performance_level = "Luar Biasa" if metrics['r2'] >= 0.85 else "Baik" if metrics['r2'] >= 0.80 else "Cukup" if metrics['r2'] >= 0.75 else "Perlu Peningkatan"
+    performance_icon = "🌟" if performance_level == "Luar Biasa" else "✅" if performance_level == "Baik" else "⚡" if performance_level == "Cukup" else "⚠️"
+    avg_error_rupiah = metrics['mae'] * 1000000
     
-    avg_error_rupiah = metrics['mae'] * 1000000  # Convert to rupiah
-    
-    # Use native Streamlit components for layout
-    st.info(f"{performance_icon} **Performance Level: {performance_level}**")
+    st.info(f"{performance_icon} **Tingkat Performa: {performance_level}**")
     
     col1, col2 = st.columns(2)
     
     with col1:
-        st.write("**📊 Accuracy & Precision:**")
-        st.write(f"• **🎯 R² Score:** {metrics['r2']:.1%} - Model explains {metrics['r2']:.1%} of price variation")
-        st.write(f"• **📋 Average Error:** IDR {avg_error_rupiah:,.0f}")
-        st.write(f"• **📈 Percentage Error:** ±{metrics['mape']:.1f}% of actual price")
+        st.write("**📊 Akurasi & Presisi:**")
+        st.write(f"• **🎯 Skor R²:** {metrics['r2']:.1%} - Model menjelaskan {metrics['r2']:.1%} dari variasi harga")
+        st.write(f"• **📋 Rata-rata Kesalahan:** IDR {avg_error_rupiah:,.0f}")
+        st.write(f"• **📈 Kesalahan Persentase:** ±{metrics['mape']:.1f}% dari harga sebenarnya")
     
     with col2:
-        st.write("**🔍 Data & Performance:**")
-        st.write(f"• **🏆 Ranking:** #{metrics.get('rank', 1)} of 7 models")
-        st.write(f"• **📊 Evaluation Data:** {metrics['n_samples']} laptops")
-        st.write(f"• **🎯 Model Type:** {metrics.get('model_name', 'Weighted Ensemble')}")
+        st.write("**🔍 Data & Performa:**")
+        st.write(f"• **🏆 Peringkat:** #{metrics.get('rank', 1)} dari 7 model")
+        st.write(f"• **📊 Data Evaluasi:** {metrics['n_samples']} laptop")
+        st.write(f"• **🎯 Tipe Model:** {metrics.get('model_name', 'Weighted Ensemble')}")
     
-    # Conclusion
     st.success(f"""
-    **💡 Practical Interpretation:**
-    
-    ✅ **High Accuracy:** Model predicts with {metrics['r2']:.1%} accuracy
-    
-    💰 **Low Error:** Predictions deviate on average by only ±{metrics['mape']:.1f}%
-    
-    🚀 **Optimal:** Selected as the best model from 7 tested algorithms
-    
-    🎯 **Conclusion:** Model is highly suitable for laptop price estimation with high confidence level
+    **💡 Interpretasi Praktis:**
+    ✅ **Akurasi Tinggi:** Model mampu memprediksi dengan akurasi sebesar {metrics['r2']:.1%}
+    💰 **Kesalahan Rendah:** Prediksi rata-rata hanya menyimpang sebesar ±{metrics['mape']:.1f}%
+    🚀 **Optimal:** Terpilih sebagai model terbaik dari 7 algoritma yang diuji
+    🎯 **Kesimpulan:** Model sangat cocok digunakan untuk estimasi harga laptop dengan tingkat kepercayaan yang tinggi
     """)
 
 def display_feature_importance():
-    """Display feature importance analysis"""
-    st.subheader("📊 Feature Importance Analysis")
+    """Menampilkan analisis tingkat kepentingan fitur (feature importance)"""
+    st.subheader("📊 Analisis Tingkat Kepentingan Fitur (Feature Importance)")
     
-    # Updated feature importance based on ensemble results
     feature_importance = {
-        'Performance_Score': 0.22,
-        'CPU_freq': 0.16,
-        'Ram': 0.14,
-        'RAM_CPU_interaction': 0.11,
-        'PrimaryStorage': 0.09,
-        'Is_Premium_Brand': 0.08,
-        'PixelDensity': 0.06,
-        'ScreenArea': 0.05,
-        'Portability_Score': 0.04,
-        'Storage_per_RAM': 0.03,
-        'RAM_per_inch': 0.02
+        'Performance_Score': 0.22, 'CPU_freq': 0.16, 'Ram': 0.14, 'RAM_CPU_interaction': 0.11,
+        'PrimaryStorage': 0.09, 'Is_Premium_Brand': 0.08, 'PixelDensity': 0.06,
+        'ScreenArea': 0.05, 'Portability_Score': 0.04, 'Storage_per_RAM': 0.03, 'RAM_per_inch': 0.02
     }
     
-    # Create DataFrame
-    df_importance = pd.DataFrame([
-        {'Feature': feature, 'Importance': importance}
-        for feature, importance in feature_importance.items()
-    ]).sort_values('Importance', ascending=True)
+    df_importance = pd.DataFrame([{'Fitur': feature, 'Tingkat Kepentingan': importance} for feature, importance in feature_importance.items()]).sort_values('Tingkat Kepentingan', ascending=True)
     
-    # Create horizontal bar chart
-    fig = px.bar(
-        df_importance,
-        x='Importance',
-        y='Feature',
-        orientation='h',
-        title='🎯 Feature Contribution to Price Prediction (Weighted Ensemble)',
-        labels={'Importance': 'Importance Level', 'Feature': 'Features'},
-        color='Importance',
-        color_continuous_scale='RdYlBu_r',
-        text='Importance'
-    )
+    fig = px.bar(df_importance, x='Tingkat Kepentingan', y='Fitur', orientation='h',
+                 title='🎯 Kontribusi Fitur terhadap Prediksi Harga (Weighted Ensemble)',
+                 labels={'Tingkat Kepentingan': 'Tingkat Kepentingan', 'Fitur': 'Fitur'},
+                 color='Tingkat Kepentingan', color_continuous_scale='RdYlBu_r', text='Tingkat Kepentingan')
     fig.update_traces(texttemplate='%{text:.3f}', textposition='inside')
     fig.update_layout(height=500)
     st.plotly_chart(fig, use_container_width=True)
     
-    # Explanation
     st.info("""
-    💡 **Feature Interpretation (Weighted Ensemble Model):**
-    - **Performance_Score (22%)**: Combined performance metric is the most important factor
-    - **CPU_freq (16%)**: CPU frequency remains highly influential on price
-    - **Ram (14%)**: RAM capacity continues to be a primary factor
-    - **RAM_CPU_interaction (11%)**: Synergy between RAM and CPU affects pricing
-    - **Brand Premium (8%)**: Premium brand status contributes significantly
-    - **Storage & Display**: Storage and display features have moderate influence
+    💡 **Interpretasi Fitur (Model Weighted Ensemble):**
+    - **Skor Performa (22%)**: Metrik performa gabungan adalah faktor terpenting.
+    - **Frekuensi CPU (16%)**: Kecepatan CPU tetap sangat berpengaruh pada harga.
+    - **RAM (14%)**: Kapasitas RAM terus menjadi faktor utama.
+    - **Interaksi RAM-CPU (11%)**: Sinergi antara RAM dan CPU memengaruhi harga.
+    - **Merek Premium (8%)**: Status merek premium berkontribusi secara signifikan.
+    - **Penyimpanan & Layar**: Fitur penyimpanan dan layar memiliki pengaruh moderat.
     """)
 
-# Load model and data
+# Muat model dan data
 model = load_model()
 df_options = get_data_options()
 
-# Display model performance at the top
 if model is not None:
     display_model_performance()
     st.divider()
-    
-    # Display model comparison
-    with st.expander("📊 View All Model Comparisons", expanded=False):
+    with st.expander("📊 Lihat Perbandingan Semua Model", expanded=False):
         display_model_comparison()
-    
-    # Display feature importance
-    with st.expander("🎯 Feature Importance Analysis", expanded=False):
+    with st.expander("🎯 Analisis Tingkat Kepentingan Fitur", expanded=False):
         display_feature_importance()
-    
     st.divider()
 
 if model and df_options is not None:
     with st.form("prediction_form"):
-        st.header("🔧 Core Specifications")
+        st.header("🔧 Spesifikasi Inti")
         col1, col2, col3 = st.columns(3)
         
         with col1:
-            company = st.selectbox("Brand", options=sorted(df_options['Company'].unique()))
-            type_name = st.selectbox("Laptop Type", options=sorted(df_options['TypeName'].unique()))
+            company = st.selectbox("Merek", options=sorted(df_options['Company'].unique()))
+            type_name = st.selectbox("Tipe Laptop", options=sorted(df_options['TypeName'].unique()))
             ram = st.selectbox("RAM (GB)", options=sorted(df_options['Ram'].unique()))
             
         with col2:
-            opsys = st.selectbox("Operating System", options=sorted(df_options['OS'].unique()))
-            weight = st.slider("Weight (kg)", min_value=0.5, max_value=5.0, value=1.5, step=0.1)
-            inches = st.slider("Screen Size (Inches)", min_value=10.0, max_value=18.0, value=15.6, step=0.1)
+            opsys = st.selectbox("Sistem Operasi", options=sorted(df_options['OS'].unique()))
+            weight = st.slider("Berat (kg)", min_value=0.5, max_value=5.0, value=1.5, step=0.1)
+            inches = st.slider("Ukuran Layar (Inci)", min_value=10.0, max_value=18.0, value=15.6, step=0.1)
             
         with col3:
-            cpu_company = st.selectbox("CPU Brand", options=sorted(df_options['CPU_company'].unique()))
-            gpu_company = st.selectbox("GPU Brand", options=sorted(df_options['GPU_company'].unique()))
-            cpu_freq = st.slider("CPU Frequency (GHz)", min_value=0.9, max_value=4.0, value=2.5, step=0.1)
+            cpu_company = st.selectbox("Merek CPU", options=sorted(df_options['CPU_company'].unique()))
+            gpu_company = st.selectbox("Merek GPU", options=sorted(df_options['GPU_company'].unique()))
+            cpu_freq = st.slider("Frekuensi CPU (GHz)", min_value=0.9, max_value=4.0, value=2.5, step=0.1)
 
-        st.header("💾 Storage & Display")
+        st.header("💾 Penyimpanan & Layar")
         col4, col5, col6 = st.columns(3)
         
         with col4:
-            storage_type = st.selectbox("Primary Storage Type", options=sorted(df_options['PrimaryStorageType'].unique()))
-            primary_storage = st.select_slider("Storage Capacity (GB)", 
-                                             options=sorted(df_options[df_options['PrimaryStorage'] > 0]['PrimaryStorage'].unique()), 
-                                             value=256)
+            storage_type = st.selectbox("Tipe Penyimpanan Utama", options=sorted(df_options['PrimaryStorageType'].unique()))
+            primary_storage = st.select_slider("Kapasitas Penyimpanan (GB)", options=sorted(df_options[df_options['PrimaryStorage'] > 0]['PrimaryStorage'].unique()), value=256)
             
         with col5:
             if 'ScreenResolution' in df_options.columns:
-                screen_resolution = st.selectbox("Screen Resolution", options=sorted(df_options['ScreenResolution'].unique()))
+                screen_resolution = st.selectbox("Resolusi Layar", options=sorted(df_options['ScreenResolution'].unique()))
                 res_match = re.search(r'(\d+)x(\d+)', screen_resolution)
                 screen_w = int(res_match.group(1)) if res_match else 1920
                 screen_h = int(res_match.group(2)) if res_match else 1080
             else:
-                screen_w = st.number_input("Screen Width (px)", value=1920, min_value=800, max_value=4000, step=1)
-                screen_h = st.number_input("Screen Height (px)", value=1080, min_value=600, max_value=3000, step=1)
+                screen_w = st.number_input("Lebar Layar (px)", value=1920, min_value=800, max_value=4000, step=1)
+                screen_h = st.number_input("Tinggi Layar (px)", value=1080, min_value=600, max_value=3000, step=1)
                 
         with col6:
-            touchscreen_str = st.radio("Touchscreen", options=['No', 'Yes'], horizontal=True)
-            ips_str = st.radio("IPS Panel", options=['No', 'Yes'], horizontal=True)
-            touchscreen = 1 if touchscreen_str == 'Yes' else 0
-            ips = 1 if ips_str == 'Yes' else 0
+            touchscreen_str = st.radio("Layar Sentuh (Touchscreen)", options=['Tidak', 'Ya'], horizontal=True)
+            ips_str = st.radio("Panel IPS", options=['Tidak', 'Ya'], horizontal=True)
+            touchscreen = 1 if touchscreen_str == 'Ya' else 0
+            ips = 1 if ips_str == 'Ya' else 0
 
-        submit_button = st.form_submit_button(label="🚀 Predict Price (Weighted Ensemble)", type="primary", use_container_width=True)
+        submit_button = st.form_submit_button(label="🚀 Prediksi Harga (Weighted Ensemble)", type="primary", use_container_width=True)
 
     if submit_button:
-        # Prepare input data consistent with expected format
         input_data = pd.DataFrame({
-            'Company': [company], 
-            'TypeName': [type_name], 
-            'Ram': [ram],
-            'Weight': [weight], 
-            'OS': [opsys], 
-            'Inches': [inches],
-            'CPU_company': [cpu_company], 
-            'CPU_freq': [cpu_freq],
-            'GPU_company': [gpu_company], 
-            'PrimaryStorage': [primary_storage],
-            'PrimaryStorageType': [storage_type], 
-            'ScreenW': [screen_w],
-            'ScreenH': [screen_h], 
-            'Touchscreen': [touchscreen], 
-            'IPSpanel': [ips]
+            'Company': [company], 'TypeName': [type_name], 'Ram': [ram], 'Weight': [weight], 
+            'OS': [opsys], 'Inches': [inches], 'CPU_company': [cpu_company], 'CPU_freq': [cpu_freq],
+            'GPU_company': [gpu_company], 'PrimaryStorage': [primary_storage], 'PrimaryStorageType': [storage_type], 
+            'ScreenW': [screen_w], 'ScreenH': [screen_h], 'Touchscreen': [touchscreen], 'IPSpanel': [ips]
         })
 
-        # ✨ IMPORTANT: Add engineered features expected by the model
         input_data_engineered = create_engineered_features(input_data)
 
-        st.info("📋 Your Input Data:")
+        st.info("📋 Data Input Anda:")
         st.dataframe(input_data, use_container_width=True)
         
-        # Show engineered features
-        with st.expander("🔧 Calculated Additional Features"):
-            engineered_features = input_data_engineered[['ScreenArea', 'PixelDensity', 'RAM_per_inch', 
-                                                       'Storage_per_RAM', 'Size_Weight_ratio', 'RAM_CPU_interaction',
-                                                       'Is_Premium_Brand', 'Performance_Score', 'Portability_Score']].round(4)
+        with st.expander("🔧 Fitur Tambahan yang Dikalkulasi"):
+            engineered_features = input_data_engineered[['ScreenArea', 'PixelDensity', 'RAM_per_inch', 'Storage_per_RAM', 'Size_Weight_ratio', 'RAM_CPU_interaction', 'Is_Premium_Brand', 'Performance_Score', 'Portability_Score']].round(4)
             st.dataframe(engineered_features, use_container_width=True)
 
-        with st.spinner("🏆 Weighted Ensemble model analyzing specifications..."):
+        with st.spinner("🏆 Model Weighted Ensemble sedang menganalisis spesifikasi..."):
             try:
-                # Prediction with optimized model using complete feature set
                 prediction = model.predict(input_data_engineered)
+                predicted_price = float(prediction[0]) if isinstance(prediction, np.ndarray) else float(prediction)
                 
-                # Handle different prediction formats
-                if isinstance(prediction, np.ndarray):
-                    predicted_price = float(prediction[0])
-                else:
-                    predicted_price = float(prediction)
-                
-                # If model uses log transform, convert back
                 try:
                     predicted_price_exp = np.expm1(predicted_price)
-                    # Check if exp result is reasonable
                     if predicted_price_exp > 0 and predicted_price_exp < predicted_price * 100:
                         predicted_price = predicted_price_exp
-                except:
-                    pass
+                except: pass
                 
-                # Display prediction with confidence interval
                 metrics = load_model_performance()
                 if metrics and metrics['mae'] > 0:
-                    confidence_interval = metrics['mae'] * 1.96  # 95% confidence interval
+                    confidence_interval = metrics['mae'] * 1.96
                     lower_bound = max(0, predicted_price - confidence_interval)
                     upper_bound = predicted_price + confidence_interval
                     
                     col1, col2 = st.columns([2, 1])
                     
                     with col1:
-                        st.success(f"## 🏆 **Price Estimation (Weighted Ensemble): IDR {predicted_price:,.2f} Million**")
-                        st.info(f"📊 **95% Confidence Interval:** IDR {lower_bound:,.2f} - {upper_bound:,.2f} Million")
-                        st.caption(f"*🎯 Prediction using {metrics.get('model_name', 'Weighted Ensemble')} - Rank #{metrics.get('rank', 1)} with {metrics['r2']:.1%} accuracy and ±{metrics['mape']:.1f}% average error*")
+                        st.success(f"## 🏆 **Estimasi Harga (Weighted Ensemble): IDR {predicted_price:,.2f} Juta**")
+                        st.info(f"📊 **Interval Kepercayaan 95%:** IDR {lower_bound:,.2f} - {upper_bound:,.2f} Juta")
+                        st.caption(f"*🎯 Prediksi menggunakan {metrics.get('model_name', 'Weighted Ensemble')} - Peringkat #{metrics.get('rank', 1)} dengan akurasi {metrics['r2']:.1%} dan rata-rata kesalahan ±{metrics['mape']:.1f}%*")
                     
                     with col2:
-                        # Price category
-                        if predicted_price < 10:
-                            category = "💰 Budget"
-                            cat_color = "#4CAF50"
-                        elif predicted_price < 25:
-                            category = "🔥 Mid-Range"
-                            cat_color = "#FF9800"
-                        elif predicted_price < 50:
-                            category = "⭐ Premium"
-                            cat_color = "#2196F3"
-                        else:
-                            category = "👑 High-End"
-                            cat_color = "#9C27B0"
-                        
+                        category = "💰 Budget" if predicted_price < 10 else "🔥 Kelas Menengah" if predicted_price < 25 else "⭐ Premium" if predicted_price < 50 else "👑 Kelas Atas"
+                        cat_color = "#4CAF50" if category == "💰 Budget" else "#FF9800" if category == "🔥 Kelas Menengah" else "#2196F3" if category == "⭐ Premium" else "#9C27B0"
                         st.markdown(f"""
                         <div style="padding: 1.5rem; border: 3px solid {cat_color}; border-radius: 12px; text-align: center; background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(0,0,0,0.02));">
                             <h3 style="color: {cat_color}; margin: 0;">{category}</h3>
-                            <p style="margin: 0.5rem 0 0 0; font-size: 0.9em; color: #666;">Laptop Category</p>
+                            <p style="margin: 0.5rem 0 0 0; font-size: 0.9em; color: #666;">Kategori Laptop</p>
                         </div>
                         """, unsafe_allow_html=True)
                         
                 else:
-                    st.success(f"## 🏆 **Price Estimation (Weighted Ensemble): IDR {predicted_price:,.2f} Million**")
-                    st.caption("*🎯 Prediction using top-performing model from comprehensive evaluation*")
+                    st.success(f"## 🏆 **Estimasi Harga (Weighted Ensemble): IDR {predicted_price:,.2f} Juta**")
+                    st.caption("*🎯 Prediksi menggunakan model dengan performa teratas dari evaluasi komprehensif*")
                 
-                # Additional insights
-                with st.expander("💡 Insights & Comprehensive Specification Analysis"):
+                with st.expander("💡 Wawasan & Analisis Spesifikasi Komprehensif"):
                     col1, col2 = st.columns(2)
-                    
                     with col1:
                         st.markdown(f"""
-                        **🔧 Specification Analysis:**
-                        - **Category:** {type_name}
-                        - **Brand:** {company} {"(Premium)" if company in ['Apple', 'Dell', 'HP', 'Lenovo'] else ""}
-                        - **Performance:** RAM {ram}GB + CPU {cpu_freq}GHz + GPU {gpu_company}
-                        - **Storage:** {primary_storage}GB {storage_type}
-                        - **Display:** {screen_w}x{screen_h}{"" if touchscreen == 0 else " (Touchscreen)"}{"" if ips == 0 else " (IPS)"}
-                        - **Weight:** {weight}kg
+                        **🔧 Analisis Spesifikasi:**
+                        - **Kategori:** {type_name}
+                        - **Merek:** {company} {"(Premium)" if company in ['Apple', 'Dell', 'HP', 'Lenovo'] else ""}
+                        - **Performa:** RAM {ram}GB + CPU {cpu_freq}GHz + GPU {gpu_company}
+                        - **Penyimpanan:** {primary_storage}GB {storage_type}
+                        - **Layar:** {screen_w}x{screen_h}{"" if touchscreen == 0 else " (Layar Sentuh)"}{"" if ips == 0 else " (IPS)"}
+                        - **Berat:** {weight}kg
                         """)
                     
                     with col2:
                         performance_score = input_data_engineered['Performance_Score'].iloc[0]
                         portability_score = input_data_engineered['Portability_Score'].iloc[0]
                         pixel_density = input_data_engineered['PixelDensity'].iloc[0]
-                        
-                        # Performance level indicators
-                        perf_level = "High" if performance_score > 0.7 else "Medium" if performance_score > 0.4 else "Low"
-                        port_level = "Highly Portable" if portability_score > 0.7 else "Portable" if portability_score > 0.4 else "Less Portable"
-                        
+                        perf_level = "Tinggi" if performance_score > 0.7 else "Sedang" if performance_score > 0.4 else "Rendah"
+                        port_level = "Sangat Portabel" if portability_score > 0.7 else "Portabel" if portability_score > 0.4 else "Kurang Portabel"
                         st.markdown(f"""
-                        **📊 Advanced Analysis Scores:**
-                        - **Performance Score:** {performance_score:.3f}/1.000 ({perf_level})
-                        - **Portability Score:** {portability_score:.3f}/1.000 ({port_level})
-                        - **Pixel Density:** {pixel_density:.0f} PPI
-                        - **Premium Brand:** {"✅ Yes" if input_data_engineered['Is_Premium_Brand'].iloc[0] else "❌ No"}
-                        - **RAM-CPU Synergy:** {input_data_engineered['RAM_CPU_interaction'].iloc[0]:.1f}
-                        - **Storage Efficiency:** {input_data_engineered['Storage_per_RAM'].iloc[0]:.1f}x
+                        **📊 Skor Analisis Lanjutan:**
+                        - **Skor Performa:** {performance_score:.3f}/1.000 ({perf_level})
+                        - **Skor Portabilitas:** {portability_score:.3f}/1.000 ({port_level})
+                        - **Kepadatan Piksel:** {pixel_density:.0f} PPI
+                        - **Merek Premium:** {"✅ Ya" if input_data_engineered['Is_Premium_Brand'].iloc[0] else "❌ Tidak"}
+                        - **Sinergi RAM-CPU:** {input_data_engineered['RAM_CPU_interaction'].iloc[0]:.1f}
+                        - **Efisiensi Penyimpanan:** {input_data_engineered['Storage_per_RAM'].iloc[0]:.1f}x
                         """)
                     
                     st.markdown(f"""
                     <div style="background: linear-gradient(90deg, #4CAF50, #45a049); color: white; padding: 1rem; border-radius: 8px; margin-top: 1rem;">
-                        <strong>🚀 Prediction Summary:</strong><br>
-                        The Weighted Ensemble model (Rank #1 of 7 models) provides reliable prediction with {metrics['r2']:.1%} accuracy. 
-                        This laptop configuration is estimated at <strong>IDR {predicted_price:,.0f} million</strong> with an error margin of ±{metrics['mape']:.1f}%.
+                        <strong>🚀 Ringkasan Prediksi:</strong><br>
+                        Model Weighted Ensemble (Peringkat #1 dari 7 model) memberikan prediksi yang andal dengan akurasi {metrics['r2']:.1%}. 
+                        Konfigurasi laptop ini diestimasi seharga <strong>IDR {predicted_price:,.0f} juta</strong> dengan margin kesalahan sekitar ±{metrics['mape']:.1f}%.
                     </div>
                     """, unsafe_allow_html=True)
                     
             except Exception as e:
-                st.error(f"❌ An error occurred during prediction: {e}")
-                st.info("🔧 Please ensure the optimized model has been properly trained or try using the standard Prediction page.")
-                
-                # Debug info
-                with st.expander("🔍 Debug Information"):
-                    st.write("**Available columns in input data:**")
+                st.error(f"❌ Terjadi kesalahan saat prediksi: {e}")
+                st.info("🔧 Pastikan model teroptimisasi telah dilatih dengan benar atau coba gunakan halaman Prediksi standar.")
+                with st.expander("🔍 Informasi Debug"):
+                    st.write("**Kolom yang tersedia di data input:**")
                     st.write(list(input_data_engineered.columns))
-                    st.write("**Input data shape:**", input_data_engineered.shape)
+                    st.write("**Bentuk data input:**", input_data_engineered.shape)
 
 else:
     if model is None:
-        st.warning("⚠️ Optimized model is not available. Please ensure the model file exists or train the model first.")
+        st.warning("⚠️ Model teroptimisasi tidak tersedia. Pastikan file model ada atau latih model terlebih dahulu.")
     if df_options is None:
-        st.warning("⚠️ Data is not available. Please ensure the data file exists.")
+        st.warning("⚠️ Data tidak tersedia. Pastikan file data ada.")
     
     st.info("""
-    💡 **Requirements:** To use this page, please ensure you have:
-    - Optimized model: `optimized_weighted_ensemble_laptop_price_model.joblib`
+    💡 **Kebutuhan:** Untuk menggunakan halaman ini, pastikan Anda memiliki:
+    - Model teroptimisasi: `optimized_weighted_ensemble_laptop_price_model.joblib`
     - Dataset: `laptop_prices.csv` 
     
-    🏆 **Weighted Ensemble Model** - Best performing model from comprehensive evaluation:
-    - **🎯 Accuracy:** R² = 0.8694 (86.94%)
-    - **📊 Error:** MAE = 2.6766 Million IDR
-    - **🏆 Ranking:** #1 of 7 tested algorithms
-    - **🔧 Features:** 25+ features including engineered features
-    - **⚡ Technology:** Ensemble of Random Forest, XGBoost, Gradient Boosting, etc.
+    🏆 **Model Weighted Ensemble** - Model dengan performa terbaik dari evaluasi komprehensif:
+    - **🎯 Akurasi:** R² = 0.8694 (86.94%)
+    - **📊 Kesalahan:** MAE = 2.6766 Juta IDR
+    - **🏆 Peringkat:** #1 dari 7 algoritma yang diuji
+    - **🔧 Fitur:** 25+ fitur termasuk fitur rekayasa (engineered features)
+    - **⚡ Teknologi:** Ensemble dari Random Forest, XGBoost, Gradient Boosting, dll.
     """)
