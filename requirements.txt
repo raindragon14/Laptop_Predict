@@ -4,3 +4,4 @@ scikit-learn
 plotly
 seaborn
 xgboost
+lightgbm
