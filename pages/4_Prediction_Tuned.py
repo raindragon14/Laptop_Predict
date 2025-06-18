@@ -388,38 +388,39 @@ def display_model_performance():
     
     avg_error_rupiah = metrics['mae'] * 1000000  # Convert to rupiah
     
-    st.markdown(f"""
-    <div style="padding: 2rem; border-left: 6px solid {performance_color}; background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(0,0,0,0.02)); border-radius: 12px; margin: 1.5rem 0; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-        <h4>{performance_icon} Tingkat Performa: <span style="color: {performance_color}; font-weight: bold;">{performance_level}</span></h4>
-        
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1.5rem 0;">
-            <div>
-                <h5>📊 Akurasi & Precision:</h5>
-                <ul style="margin: 0.5rem 0;">
-                    <li><strong>🎯 R² Score:</strong> {metrics['r2']:.1%} - Model menjelaskan {metrics['r2']:.1%} variasi harga</li>
-                    <li><strong>📋 Kesalahan Rata-rata:</strong> Rp {avg_error_rupiah:,.0f}</li>
-                    <li><strong>📈 Kesalahan Persentase:</strong> ±{metrics['mape']:.1f}% dari harga aktual</li>
-                </ul>
-            </div>
-            <div>
-                <h5>🔍 Data & Ranking:</h5>
-                <ul style="margin: 0.5rem 0;">
-                    <li><strong>🏆 Ranking:</strong> #{metrics.get('rank', 1)} dari 7 model</li>
-                    <li><strong>📊 Data Evaluasi:</strong> {metrics['n_samples']} laptop</li>
-                    <li><strong>🎯 Model Type:</strong> {metrics.get('model_name', 'Weighted Ensemble')}</li>
-                </ul>
-            </div>
+    # Ganti baris 391-422 dengan kode yang diperbaiki ini:
+st.markdown(f"""
+<div style="padding: 2rem; border-left: 6px solid {performance_color}; background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(0,0,0,0.02)); border-radius: 12px; margin: 1.5rem 0; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+    <h4>{performance_icon} Tingkat Performa: <span style="color: {performance_color}; font-weight: bold;">{performance_level}</span></h4>
+    
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1.5rem 0;">
+        <div>
+            <h5>📊 Akurasi & Precision:</h5>
+            <ul style="margin: 0.5rem 0;">
+                <li><strong>🎯 R² Score:</strong> {metrics['r2']:.1%} - Model menjelaskan {metrics['r2']:.1%} variasi harga</li>
+                <li><strong>📋 Kesalahan Rata-rata:</strong> Rp {avg_error_rupiah:,.0f}</li>
+                <li><strong>📈 Kesalahan Persentase:</strong> ±{metrics['mape']:.1f}% dari harga aktual</li>
+            </ul>
         </div>
-        
-        <div style="background: rgba(76, 175, 80, 0.1); padding: 1.5rem; border-radius: 8px; margin-top: 1.5rem; border-left: 4px solid {performance_color};">
-            <h5 style="color: {performance_color}; margin-top: 0;">💡 Interpretasi Praktis:</h5>
-            <p style="margin: 0.5rem 0;"><strong>✅ Akurasi Tinggi:</strong> Model dapat memprediksi dengan akurasi {metrics['r2']:.1%}</p>
-            <p style="margin: 0.5rem 0;"><strong>💰 Error Rendah:</strong> Prediksi rata-rata meleset hanya ±{metrics['mape']:.1f}%</p>
-            <p style="margin: 0.5rem 0;"><strong>🚀 Optimal:</strong> Terpilih sebagai model terbaik dari 7 algoritma yang diuji</p>
-            <p style="margin: 0.5rem 0; font-style: italic;"><strong>🎯 Kesimpulan:</strong> Model sangat cocok untuk estimasi harga laptop dengan tingkat kepercayaan tinggi</p>
+        <div>
+            <h5>🔍 Data & Ranking:</h5>
+            <ul style="margin: 0.5rem 0;">
+                <li><strong>🏆 Ranking:</strong> #{metrics.get('rank', 1)} dari 7 model</li>
+                <li><strong>📊 Data Evaluasi:</strong> {metrics['n_samples']} laptop</li>
+                <li><strong>🎯 Model Type:</strong> {metrics.get('model_name', 'Weighted Ensemble')}</li>
+            </ul>
         </div>
     </div>
-    """, unsafe_allow_html=True)
+    
+    <div style="background: rgba(76, 175, 80, 0.1); padding: 1.5rem; border-radius: 8px; margin-top: 1.5rem; border-left: 4px solid {performance_color};">
+        <h5 style="color: {performance_color}; margin-top: 0;">💡 Interpretasi Praktis:</h5>
+        <p style="margin: 0.5rem 0;"><strong>✅ Akurasi Tinggi:</strong> Model dapat memprediksi dengan akurasi {metrics['r2']:.1%}</p>
+        <p style="margin: 0.5rem 0;"><strong>💰 Error Rendah:</strong> Prediksi rata-rata meleset hanya ±{metrics['mape']:.1f}%</p>
+        <p style="margin: 0.5rem 0;"><strong>🚀 Optimal:</strong> Terpilih sebagai model terbaik dari 7 algoritma yang diuji</p>
+        <p style="margin: 0.5rem 0; font-style: italic;"><strong>🎯 Kesimpulan:</strong> Model sangat cocok untuk estimasi harga laptop dengan tingkat kepercayaan tinggi</p>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
 def display_feature_importance():
     """Display feature importance if available"""
