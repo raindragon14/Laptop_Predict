@@ -127,10 +127,6 @@ def get_data_options():
 
 @st.cache_data
 def get_actual_performance_metrics():
-    """
-    Data performa model SEBENARNYA dari Complete_Notebook.ipynb
-    Berdasarkan hasil yang ditampilkan di gambar
-    """
     return {
         'weighted_ensemble': {
             'name': 'Weighted Ensemble (Best)',
@@ -200,7 +196,6 @@ def load_model_performance():
             metrics = joblib.load(metrics_path)
             return metrics
         else:
-            # Gunakan hasil SEBENARNYA dari Complete_Notebook.ipynb
             actual_metrics = get_actual_performance_metrics()
             # Return weighted ensemble (model terbaik) sebagai default
             best_metrics = actual_metrics['weighted_ensemble']
@@ -218,8 +213,7 @@ def load_model_performance():
         return None
 
 def display_model_comparison():
-    """Display comparison of all models from notebook with ACTUAL data"""
-    st.header("📊 Perbandingan Model dari Complete Notebook (Data Sebenarnya)")
+    st.header("📊 Perbandingan Model")
     
     actual_metrics = get_actual_performance_metrics()
     
@@ -261,7 +255,7 @@ def display_model_comparison():
             df_comparison, 
             x='Model', 
             y='R² Score',
-            title='📊 Perbandingan R² Score (Data Sebenarnya)',
+            title='📊 Perbandingan R² Score',
             color='R² Score',
             color_continuous_scale='Viridis',
             text='R² Score'
@@ -317,7 +311,7 @@ def display_model_comparison():
 
 def display_model_performance():
     """Display model performance metrics with ACTUAL data"""
-    st.header("🎯 Performa Model Fine Tuned (Data Sebenarnya)")
+    st.header("🎯 Performa Model Fine Tuned")
     
     metrics = load_model_performance()
     
@@ -367,7 +361,7 @@ def display_model_performance():
         )
     
     # Interpretasi performa dengan data sebenarnya
-    st.subheader("🎯 Interpretasi Performa Model (Berdasarkan Data Sebenarnya)")
+    st.subheader("🎯 Interpretasi Performa Model")
     
     if metrics['r2'] >= 0.85:
         performance_level = "Sangat Baik"
@@ -391,7 +385,7 @@ def display_model_performance():
 # Alternatif tanpa HTML custom - ganti fungsi display_model_performance()
 def display_model_performance():
     """Display model performance metrics dengan komponen Streamlit native"""
-    st.header("🎯 Performa Model Fine Tuned (Data Sebenarnya)")
+    st.header("🎯 Performa Model Fine Tuned")
     
     metrics = load_model_performance()
     
